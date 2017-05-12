@@ -14,6 +14,7 @@
 
 #LIBRARY NEEDED FOR ANALYSIS
 #####################################################################################################################
+start.time <- Sys.time()
 
 library(raster)
 library(rgdal)
@@ -110,11 +111,11 @@ crs(bikeCrit.raster) <- crs
 src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","TotalLane.shp", sep = "")
 
 #Rasterize Total Lane
-r.totalLane <- raster(extent(UA), resolution = resolution)
-crs(r.totalLane) <- crs
-totalLane.tif <- writeRaster(r.totalLane, filename = "totalLane.tif", format="GTiff", overwrite=TRUE)
-totalLane.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "totalLane.tif", a="TotalLanes", output_Raster = TRUE)
-crs(totalLane.raster) <- crs
+r.lanePerDir <- raster(extent(UA), resolution = resolution)
+crs(r.lanePerDir) <- crs
+lanePerDir.tif <- writeRaster(r.lanePerDir, filename = "lanePerDir.tif", format="GTiff", overwrite=TRUE)
+lanePerDir.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "totalLane.tif", a="lanePerDir", output_Raster = TRUE)
+crs(lanePerDir.raster) <- crs
 
 
 #########################################################################################################################
@@ -166,12 +167,12 @@ scoreOffStreet[osft1 | osft2 | osft3 | osft4 | osft5 | osft10] <- 1
 #####################################################################################################################
 #Assign on street biking facilities based on number of lane per direction, prevailing speed, and width of street
 #Calculate a new raster containing lane per direction
-lanePerDirectionFun <- function(x) {
-  x%/%2;
-}
+#lanePerDirectionFun <- function(x) {
+#  x%/%2;
+#}
 
-lanePerDirection.raster <- calc(totalLane.raster, lanePerDirectionFun)
-crs(lanePerDirection.raster) <- crs
+#lanePerDirection.raster <- calc(totalLane.raster, lanePerDirectionFun)
+#crs(lanePerDirection.raster) <- crs
 #####################################################################################################################
 ####Create new layer for each criteria#
 #Bike Lane with Adjacent Parking Lane Criteria
@@ -181,8 +182,8 @@ ly <- bikeCrit.raster == 1
 ln <- bikeCrit.raster == 0 
 
 #Lane per direction
-lpd1 <- lanePerDirection.raster == 1
-lpd2 <- lanePerDirection.raster >= 2
+lpd1 <- lanePerDir.raster == 1 | lanePerDir.raster == 0
+lpd2 <- lanePerDir.raster >= 2
 
 #Prevailing Speed or Posted Speed
 sp25 <- speed.raster <=25
@@ -205,10 +206,10 @@ bw5.5 <- roadWidth.raster <= 5.5
 bwless7 <- roadWidth.raster < 7
 
 #lane per direction
-lane0 <- totalLane.raster == 0
-lane1 <- totalLane.raster == 1
-lane2 <- totalLane.raster == 2
-lane3 <- totalLane.raster >= 3
+lane0 <- lanePerDir.raster == 0
+lane1 <- lanePerDir.raster == 1
+lane2 <- lanePerDir.raster == 2
+lane3 <- lanePerDir.raster >= 3
 
 
 #####################################################################################################################
@@ -313,3 +314,8 @@ scoreComb <- overlay(stk, fun=min)
 breakpoints <- c(0,1,2,3,4,5)
 colors <- c("blue","green","orange","red","white")
 plot(scoreComb,breaks=breakpoints,col=colors, main ="Combine Score w/o Intersection")
+
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
