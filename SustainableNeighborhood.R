@@ -3,14 +3,12 @@
 #raster files using gdalUtils.  Perform BLTS analysis based on the documentation ODOT report
 #Author: Edmond Lai - CUUATS
 #Last Work on by: Edmond Lai
-#Date Last Worked on: 5/11/2017
-#Version number 2.0
+#Date Last Worked on: 5/12/2017
 #Last Worked on: 
-#create function for each table of analysis
+#Corrected lane per direction
 
 #Need to complete:
-#Combine different BLTS score into One overall score
-#Question about total lane criteria
+#Intersection approach
 
 #LIBRARY NEEDED FOR ANALYSIS
 #####################################################################################################################
@@ -19,8 +17,6 @@ start.time <- Sys.time()
 library(raster)
 library(rgdal)
 library(gdalUtils)
-library(ggplot2)
-library(foreign)
 
 #valid install gdalUtils?
 valid_install <- !is.null(getOption("gdalUtils_gdalPath"))
@@ -28,12 +24,16 @@ valid_install
 
 #USER INPUT
 #####################################################################################################################
-
 #set path to the file geodatabase containing feature classes for analysis
 path.fgdb <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
 
+
+#set working Directory
+wd <- "L:/Sustainable Neighborhoods Toolkit/scripts/SustainableNeighborhood"
+setwd(wd)
+
 #Set resolution for raster cell size, this can be changed by the user to fine tune the scale of cell size
-resolution = 100
+resolution <- 100
 
 #set path to the study area geodatabase
 boundary.fgdb <- "G:/Resources/Data/Boundary.gdb"
@@ -42,7 +42,8 @@ boundary.fgdb <- "G:/Resources/Data/Boundary.gdb"
 crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 
 #set no path value
-npv = 5
+npv <- 5
+
 
 #READING FEATURE CLASS LINE FILES FROM ESRI GEODATABASE
 #####################################################################################################################
@@ -74,7 +75,7 @@ r.bikelane <- raster(extent(UA), resolution = resolution)
 crs(r.bikelane) <- crs
 bikelane.tif <- writeRaster(r.bikelane, filename = "bikelane.tif", format="GTiff", overwrite=TRUE)
 facility.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikelane.tif", a="PathType", output_Raster = TRUE)
-
+crs(facility.raster) <- crs
 
 #Rasterize Bike Path Width
 r.rdWidth <- raster(extent(UA), resolution=resolution)
@@ -120,7 +121,6 @@ crs(lanePerDir.raster) <- crs
 
 #########################################################################################################################
 #StreetCL layer
-
 #Set path to Street CL shapefile
 src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
 r.speed <- raster(extent(UA), resolution = resolution)
@@ -131,10 +131,10 @@ crs(speed.raster) <- crs
 
 #########################################################################################################################
 ###Create an BLTS Layer that will contain the score from BLTS analysis
-blts <- raster()
-extent(blts) = extent(Street)
-res(blts) = resolution
-`values<-`(blts,0)
+#blts <- raster()
+#extent(blts) = extent(Street)
+#res(blts) = resolution
+#`values<-`(blts,0)
 
 
 #FUNCTIONS TO BE USED IN THE BLTS SCORE ANALYSIS (In Progress)
@@ -175,13 +175,14 @@ scoreOffStreet[osft1 | osft2 | osft3 | osft4 | osft5 | osft10] <- 1
 #crs(lanePerDirection.raster) <- crs
 #####################################################################################################################
 ####Create new layer for each criteria#
-#Bike Lane with Adjacent Parking Lane Criteria
 
-#Bike Criteria 
+
+#Bike Criteria (Does the bike lane has adj parkign? 1 - yes, 0 - no)
 ly <- bikeCrit.raster == 1
 ln <- bikeCrit.raster == 0 
 
-#Lane per direction
+
+#Lane per direction (for Biking facilities)
 lpd1 <- lanePerDir.raster == 1 | lanePerDir.raster == 0
 lpd2 <- lanePerDir.raster >= 2
 
@@ -199,81 +200,101 @@ bpw14 <- bikeParkWidth.raster >= 14 & bikeParkWidth.raster < 15
 bpw13 <- bikeParkWidth.raster <= 13
 bpw2 <- bikeParkWidth.raster <= 14.5
 
-#bike Lane width
+#Bike Lane width
 bwgreat7 <- roadWidth.raster >= 7
 bwb57 <- roadWidth.raster > 5.5 & roadWidth.raster < 7
 bw5.5 <- roadWidth.raster <= 5.5
 bwless7 <- roadWidth.raster < 7
 
-#lane per direction
+#Lane per direction (for mixed use traffic)
 lane0 <- lanePerDir.raster == 0
 lane1 <- lanePerDir.raster == 1
 lane2 <- lanePerDir.raster == 2
 lane3 <- lanePerDir.raster >= 3
 
+#No bike Lane but has sharrow
+sharrow <- facility.raster == 8
+
 
 #####################################################################################################################
 ###Exhibit 14-3 Bike Lane with Adjaent Parking Lane Criteria
 #Create a Score Layer
+#Create all bike facilities
+allBike <- is.na(facility.raster) == FALSE
+
+#Bike Lane with Adjacent Parking Lane Criteria
+#Bike Path Type
+bikelane <- facility.raster == 6 | facility.raster == 9
+
+
+scoreBike <- raster(extent(UA), resolution=resolution)
+crs(scoreBike) <- crs
+scoreBike[] <- npv
+plot(scoreBike)
+
+scoreBike[allBike] <- 1
+plot(scoreBike)
+
 scoreBLwP <- raster(extent(UA), resolution=resolution)
 crs(scoreBLwP) <- crs
 scoreBLwP[] <- npv
 
-scoreBLwP[ly & lpd1 & sp25 & bpw15] <- 1
-scoreBLwP[ly & lpd1 & sp30 & bpw15] <- 1
-scoreBLwP[ly & lpd1 & sp35 & bpw15] <- 2
-scoreBLwP[ly & lpd1 & sp40 & bpw15] <- 2
+scoreBike[bikelane & ly & lpd1 & sp25 & bpw15] <- 1
+scoreBike[bikelane & ly & lpd1 & sp30 & bpw15] <- 1
+scoreBike[bikelane & ly & lpd1 & sp35 & bpw15] <- 2
+scoreBike[bikelane & ly & lpd1 & sp40 & bpw15] <- 2
 
-scoreBLwP[ly & lpd1 & sp25 & bpw14] <- 2
-scoreBLwP[ly & lpd1 & sp30 & bpw14] <- 2
-scoreBLwP[ly & lpd1 & sp35 & bpw14] <- 3
-scoreBLwP[ly & lpd1 & sp40 & bpw14] <- 4
+scoreBike[bikelane & ly & lpd1 & sp25 & bpw14] <- 2
+scoreBike[bikelane & ly & lpd1 & sp30 & bpw14] <- 2
+scoreBike[bikelane & ly & lpd1 & sp35 & bpw14] <- 3
+scoreBike[bikelane & ly & lpd1 & sp40 & bpw14] <- 4
 
-scoreBLwP[ly & lpd1 & sp25 & bpw13] <- 3
-scoreBLwP[ly & lpd1 & sp30 & bpw13] <- 3
-scoreBLwP[ly & lpd1 & sp35 & bpw13] <- 3
-scoreBLwP[ly & lpd1 & sp40 & bpw13] <- 4
+scoreBike[bikelane & ly & lpd1 & sp25 & bpw13] <- 3
+scoreBike[bikelane & ly & lpd1 & sp30 & bpw13] <- 3
+scoreBike[bikelane & ly & lpd1 & sp35 & bpw13] <- 3
+scoreBike[bikelane & ly & lpd1 & sp40 & bpw13] <- 4
 
-scoreBLwP[ly & lpd2 & sp25 & bpw15] <- 2
-scoreBLwP[ly & lpd2 & sp30 & bpw15] <- 2
-scoreBLwP[ly & lpd2 & sp35 & bpw15] <- 3
-scoreBLwP[ly & lpd2 & sp40 & bpw15] <- 3
+scoreBike[bikelane & ly & lpd2 & sp25 & bpw15] <- 2
+scoreBike[bikelane & ly & lpd2 & sp30 & bpw15] <- 2
+scoreBike[bikelane & ly & lpd2 & sp35 & bpw15] <- 3
+scoreBike[bikelane & ly & lpd2 & sp40 & bpw15] <- 3
 
-scoreBLwP[ly & lpd2 & sp25 & bpw2] <- 3
-scoreBLwP[ly & lpd2 & sp30 & bpw2] <- 3
-scoreBLwP[ly & lpd2 & sp35 & bpw2] <- 3
-scoreBLwP[ly & lpd2 & sp40 & bpw2] <- 4
+scoreBike[bikelane & ly & lpd2 & sp25 & bpw2] <- 3
+scoreBike[bikelane & ly & lpd2 & sp30 & bpw2] <- 3
+scoreBike[bikelane & ly & lpd2 & sp35 & bpw2] <- 3
+scoreBike[bikelane & ly & lpd2 & sp40 & bpw2] <- 4
 
-
-
+plot(scoreBike)
+#####################################################################################################################
 ###Exhibit 14-4 Bike Lane without Adjacent Parking Lane Criteria
 scoreBLwoP <- raster(extent(UA), resolution=resolution)
 crs(scoreBLwoP) <- crs
 scoreBLwoP[] <- npv
 
-scoreBLwoP[ln & lpd1 & spless30 & bwgreat7] <- 1
-scoreBLwoP[ln & lpd1 & sp35 & bwgreat7] <- 2
-scoreBLwoP[ln & lpd1 & sp40 & bwgreat7] <- 3
+scoreBike[bikelane & ln & lpd1 & spless30 & bwgreat7] <- 1
+scoreBike[bikelane & ln & lpd1 & sp35 & bwgreat7] <- 2
+scoreBike[bikelane & ln & lpd1 & sp40 & bwgreat7] <- 3
 
-scoreBLwoP[ln & lpd1 & spless30 & bwb57] <- 1
-scoreBLwoP[ln & lpd1 & sp35 & bwb57] <- 3
-scoreBLwoP[ln & lpd1 & sp40 & bwb57] <- 4
+scoreBike[bikelane & ln & lpd1 & spless30 & bwb57] <- 1
+scoreBike[bikelane & ln & lpd1 & sp35 & bwb57] <- 3
+scoreBike[bikelane & ln & lpd1 & sp40 & bwb57] <- 4
 
-scoreBLwoP[ln & lpd1 & spless30 & bw5.5] <- 2
-scoreBLwoP[ln & lpd1 & sp35 & bw5.5] <- 3
-scoreBLwoP[ln & lpd1 & sp40 & bw5.5] <- 4
+scoreBike[bikelane & ln & lpd1 & spless30 & bw5.5] <- 2
+scoreBike[bikelane & ln & lpd1 & sp35 & bw5.5] <- 3
+scoreBike[bikelane & ln & lpd1 & sp40 & bw5.5] <- 4
 
-scoreBLwoP[ln & lpd2 & spless30 & bwgreat7] <- 1
-scoreBLwoP[ln & lpd2 & sp35 & bwgreat7] <- 2
-scoreBLwoP[ln & lpd2 & sp40 & bwgreat7] <- 3
+scoreBike[bikelane & ln & lpd2 & spless30 & bwgreat7] <- 1
+scoreBike[bikelane & ln & lpd2 & sp35 & bwgreat7] <- 2
+scoreBike[bikelane & ln & lpd2 & sp40 & bwgreat7] <- 3
 
-scoreBLwoP[ln & lpd2 & spless30 & bwless7] <- 3
-scoreBLwoP[ln & lpd2 & sp35 & bwless7] <- 3
-scoreBLwoP[ln & lpd2 & sp40 & bwless7] <- 4
+scoreBike[bikelane & ln & lpd2 & spless30 & bwless7] <- 3
+scoreBike[bikelane & ln & lpd2 & sp35 & bwless7] <- 3
+scoreBike[bikelane & ln & lpd2 & sp40 & bwless7] <- 4
+plot(scoreBike)
+#####################################################################################################################
+### Exhibit 14-5 Urban/Suburban Mixed used with Biking Facilities
 
-
-
-
+#####################################################################################################################
 ### Exhibit 14-5 Urban/Suburban Mixed Traffic Criteria
 scoreMix <- raster(extent(UA), resolution=resolution)
 crs(scoreMix) <- crs
@@ -295,17 +316,16 @@ scoreMix[sp25 & lane3] <- 4
 scoreMix[sp30 & lane3] <- 4
 scoreMix[spgreat35 & lane3] <- 4
 
-#plot all the scores
-plot(scoreBLwP, main = "Score - Bike Lane w/ Parking")
-plot(scoreBLwoP, main = "Score - Bike Lane w/o Parking")
-plot(scoreMix, main = "Score - Mixed Traffic")
-plot(scoreOffStreet, main = "Score - Off Streeet Biking Facilities")
+#####################################################################################################################
+###plot score of Bike
+plot(scoreBike, main = "Score for all biking facilities")
 
+##plot score comb
 scoreComb <- raster(extent(UA), resolution=resolution)
 crs(scoreComb) <- crs
 scoreComb[] <- npv
 
-stk <- stack(scoreBLwoP, scoreBLwP,scoreMix,scoreOffStreet)
+stk <- stack(scoreMix,scoreBike)
 
 scoreComb <- overlay(stk, fun=min)
 #plot(scoreComb, main = "Combine Score w/o Intersection")
@@ -315,7 +335,14 @@ breakpoints <- c(0,1,2,3,4,5)
 colors <- c("blue","green","orange","red","white")
 plot(scoreComb,breaks=breakpoints,col=colors, main ="Combine Score w/o Intersection")
 
+###Export score as a GeoTiff
+#writeRaster(scoreComb, "scoreComb.tff", format = "GTiff", overwrite=TRUE)
 
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
+
+#####################################################################################################################
+#####INTERSECTION APPROACH #####
+
+
