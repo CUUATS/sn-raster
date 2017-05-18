@@ -74,35 +74,35 @@ src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","bikeLane.s
 r.bikelane <- raster(extent(UA), resolution = resolution)
 crs(r.bikelane) <- crs
 bikelane.tif <- writeRaster(r.bikelane, filename = "bikelane.tif", format="GTiff", overwrite=TRUE)
-facility.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikelane.tif", a="PathType", output_Raster = TRUE)
+facility.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikelane.tif", a="PathType", at=TRUE, output_Raster = TRUE)
 crs(facility.raster) <- crs
 
 #Rasterize Bike Path Width
 r.rdWidth <- raster(extent(UA), resolution=resolution)
 crs(r.rdWidth) <- crs
 roadWidth.tif <- writeRaster(r.rdWidth, filename = "roadWidth.tif", format = "GTiff", overwrite = TRUE)
-roadWidth.raster <- gdal_rasterize(src_datasource, dst_filename = "roadWidth.tif", a="Width", output_Raster = TRUE)
+roadWidth.raster <- gdal_rasterize(src_datasource, dst_filename = "roadWidth.tif", a="Width",at=TRUE,output_Raster = TRUE)
 crs(roadWidth.raster) <- crs
 
 ###Rasterize Parking Lane Width
 r.pkWidth <- raster(extent(UA), resolution = resolution)
 crs(r.pkWidth) <- crs
 pkWidth.tif <- writeRaster(r.pkWidth, filename = "parkingWidth.tif", format="GTiff", overwrite=TRUE)
-parkingWidth.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "parkingWidth.tif", a="pkLaneWidt", output_Raster = TRUE)
+parkingWidth.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "parkingWidth.tif", a="pkLaneWidt",at=TRUE,output_Raster = TRUE)
 crs(parkingWidth.raster) <- crs
 
 ###Create Combined Parking and Bike Lane Width
 r.bikeParkWidth <- raster(extent(UA), resolution = resolution)
 crs(r.bikeParkWidth) <- crs
 bikeParkWidth.tif <- writeRaster(r.bikeParkWidth, filename = "bikeParkWidth.tif", format="GTiff", overwrite=TRUE)
-bikeParkWidth.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikeParkWidth.tif", a="Comb_ParkB", output_Raster = TRUE)
+bikeParkWidth.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikeParkWidth.tif", a="Comb_ParkB",at=TRUE,output_Raster = TRUE)
 crs(bikeParkWidth.raster) <- crs
 
 ###Create Bike Lane with Adjacent Parking Lane Criteria
 r.bikeCrit <- raster(extent(UA), resolution = resolution)
 crs(r.bikeCrit) <- crs
 bikeCrit.tif <- writeRaster(r.bikeCrit, filename = "bikeCrit.tif", format="GTiff", overwrite=TRUE)
-bikeCrit.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikeParkWidth.tif", a="hasParki_1", output_Raster = TRUE)
+bikeCrit.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikeParkWidth.tif", a="hasParki_1",at=TRUE,output_Raster = TRUE)
 crs(bikeCrit.raster) <- crs
 
 #########################################################################################################################
@@ -115,7 +115,7 @@ src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","TotalLane.
 r.lanePerDir <- raster(extent(UA), resolution = resolution)
 crs(r.lanePerDir) <- crs
 lanePerDir.tif <- writeRaster(r.lanePerDir, filename = "lanePerDir.tif", format="GTiff", overwrite=TRUE)
-lanePerDir.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "totalLane.tif", a="lanePerDir", output_Raster = TRUE)
+lanePerDir.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "totalLane.tif", a="lanePerDir",at=TRUE,output_Raster = TRUE)
 crs(lanePerDir.raster) <- crs
 
 
@@ -126,7 +126,7 @@ src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.s
 r.speed <- raster(extent(UA), resolution = resolution)
 crs(r.speed) <- crs
 speed.tif <- writeRaster(r.speed, filename = "speed.tif", format="GTiff", overwrite=TRUE)
-speed.raster <- gdal_rasterize(src_datasource, dst_filename = "speed.tif", a="SPEED", output_Raster = TRUE)
+speed.raster <- gdal_rasterize(src_datasource, dst_filename = "speed.tif", a="SPEED",at=TRUE,output_Raster = TRUE)
 crs(speed.raster) <- crs
 
 #########################################################################################################################
@@ -230,10 +230,9 @@ bikelane <- facility.raster == 6 | facility.raster == 9
 scoreBike <- raster(extent(UA), resolution=resolution)
 crs(scoreBike) <- crs
 scoreBike[] <- npv
-plot(scoreBike)
 
-scoreBike[allBike] <- 1
-plot(scoreBike)
+#Set the default score for all biking facilities
+scoreBike[allBike] <- 2
 
 scoreBLwP <- raster(extent(UA), resolution=resolution)
 crs(scoreBLwP) <- crs
@@ -264,7 +263,6 @@ scoreBike[bikelane & ly & lpd2 & sp30 & bpw2] <- 3
 scoreBike[bikelane & ly & lpd2 & sp35 & bpw2] <- 3
 scoreBike[bikelane & ly & lpd2 & sp40 & bpw2] <- 4
 
-plot(scoreBike)
 #####################################################################################################################
 ###Exhibit 14-4 Bike Lane without Adjacent Parking Lane Criteria
 scoreBLwoP <- raster(extent(UA), resolution=resolution)
@@ -290,7 +288,6 @@ scoreBike[bikelane & ln & lpd2 & sp40 & bwgreat7] <- 3
 scoreBike[bikelane & ln & lpd2 & spless30 & bwless7] <- 3
 scoreBike[bikelane & ln & lpd2 & sp35 & bwless7] <- 3
 scoreBike[bikelane & ln & lpd2 & sp40 & bwless7] <- 4
-plot(scoreBike)
 #####################################################################################################################
 ### Exhibit 14-5 Urban/Suburban Mixed used with Biking Facilities
 
@@ -336,7 +333,8 @@ colors <- c("blue","green","orange","red","white")
 plot(scoreComb,breaks=breakpoints,col=colors, main ="Combine Score w/o Intersection")
 
 ###Export score as a GeoTiff
-#writeRaster(scoreComb, "scoreComb.tff", format = "GTiff", overwrite=TRUE)
+writeRaster(scoreComb, "scoreComb.tif", format = "GTiff", overwrite=TRUE)
+
 
 end.time <- Sys.time()
 time.taken <- end.time - start.time
@@ -344,5 +342,46 @@ time.taken
 
 #####################################################################################################################
 #####INTERSECTION APPROACH #####
+#Rasterizing Attributes needed for the Intersection Approach
+
+#Rasterize Right Turn Lane Config
+#####################################################################################################################
+src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+r.RTL_Conf_N <- raster(extent(UA), resolution = resolution)
+crs(r.RTL_Conf_N) <- crs
+RTL_Conf_N.tif <- writeRaster(r.RTL_conf_N, filename = "RTL_Conf_N", format="GTiff", overwrite=TRUE)
+RTL_Conf_N.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_N.tif", a="RTL_Conf_N",at=TRUE,output_Raster = TRUE)
+crs(RTL_conf_N.raster) <- crs
+
+src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+r.RTL_Conf_S <- raster(extent(UA), resolution = resolution)
+crs(r.RTL_Conf_S) <- crs
+RTL_Conf_S.tif <- writeRaster(r.RTL_Conf_S, filename = "RTL_Conf_S", format="GTiff", overwrite=TRUE)
+RTL_Conf_S.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_S.tif", a="RTL_Conf_S",at=TRUE,output_Raster = TRUE)
+crs(RTL_Conf_S.raster) <- crs
+
+src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+r.RTL_Conf_E <- raster(extent(UA), resolution = resolution)
+crs(r.RTL_Conf_E) <- crs
+RTL_Conf_E.tif <- writeRaster(r.RTL_Conf_E, filename = "RTL_Conf_E", format="GTiff", overwrite=TRUE)
+RTL_Conf_E.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_E.tif", a="RTL_Conf_E",at=TRUE,output_Raster = TRUE)
+crs(RTL_Conf_E.raster) <- crs
+
+src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+r.RTL_Conf_W <- raster(extent(UA), resolution = resolution)
+crs(r.RTL_Conf_W) <- crs
+RTL_Conf_W.tif <- writeRaster(r.RTL_Conf_W, filename = "RTL_Conf_W", format="GTiff", overwrite=TRUE)
+RTL_Conf_W.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_W.tif", a="RTL_Conf_W",at=TRUE,output_Raster = TRUE)
+crs(RTL_Conf_W.raster) <- crs
+#####################################################################################################################
+#Rasterize Bike Lane Approach
+src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+r.BL_Appr_Al <- raster(extent(UA), resolution = resolution)
+crs(r.BL_Appr_Al) <- crs
+BL_Appr_Al.tif <- writeRaster(r.BL_Appr_Al, filename = "BL_Appr_Al", format="GTiff", overwrite=TRUE)
+BL_Appr_Al.raster <- gdal_rasterize(src_datasource, dst_filename = "BL_Appr_Al.tif", a="BL_Appr_Al",at=TRUE,output_Raster = TRUE)
+crs(BL_Appr_Al.raster) <- crs
+
+#Right Turn Lane Criteria Exhibit 14-7
 
 
