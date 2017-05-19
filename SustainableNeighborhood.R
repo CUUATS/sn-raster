@@ -349,9 +349,9 @@ time.taken
 src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
 r.RTL_Conf_N <- raster(extent(UA), resolution = resolution)
 crs(r.RTL_Conf_N) <- crs
-RTL_Conf_N.tif <- writeRaster(r.RTL_conf_N, filename = "RTL_Conf_N", format="GTiff", overwrite=TRUE)
+RTL_Conf_N.tif <- writeRaster(r.RTL_Conf_N, filename = "RTL_Conf_N", format="GTiff", overwrite=TRUE)
 RTL_Conf_N.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_N.tif", a="RTL_Conf_N",at=TRUE,output_Raster = TRUE)
-crs(RTL_conf_N.raster) <- crs
+crs(RTL_Conf_N.raster) <- crs
 
 src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
 r.RTL_Conf_S <- raster(extent(UA), resolution = resolution)
@@ -382,6 +382,60 @@ BL_Appr_Al.tif <- writeRaster(r.BL_Appr_Al, filename = "BL_Appr_Al", format="GTi
 BL_Appr_Al.raster <- gdal_rasterize(src_datasource, dst_filename = "BL_Appr_Al.tif", a="BL_Appr_Al",at=TRUE,output_Raster = TRUE)
 crs(BL_Appr_Al.raster) <- crs
 
-#Right Turn Lane Criteria Exhibit 14-7
+#Rasterize Right Turn Lane Length
+src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+r.RTL_Length <- raster(extent(UA), resolution = resolution)
+crs(r.RTL_Length) <- crs
+RTL_Length.tif <- writeRaster(r.RTL_Length, filename = "RTL_Length", format="GTiff", overwrite=TRUE)
+RTL_Length.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Length.tif", a="RTL_Length",at=TRUE,output_Raster = TRUE)
+crs(RTL_Length.raster) <- crs
 
 
+
+#####################################################################################################################
+#Right Turn Lane Criteria Exhibit 14-7 
+#Create empty raster to store the score
+scoreRTL <- raster(extent(UA), resolution=resolution)
+crs(scoreRTL) <- crs
+scoreRTL[] <- 5
+
+scoreRTL.temp <- raster(extent(UA), resolution=resolution)
+crs(scoreRTL.temp) <- crs
+scoreRTL.temp[] <- 5
+#####################################################################################################################
+#create T/F layer for the Right-turn lane configuration
+RTL_Length_less150 <-  RTL_Length.raster <= 150 & RTL_Length.raster > 0
+RTL_Length_great150 <- RTL_Length.raster > 150
+RTL_Length_any <- RTL_Length.raster > 0
+RTL_Appro_Str <- BL_Appr_Al.raster == 1
+RTL_Appro_Lef <- BL_Appr_Al.raster == 2 | BL_Appr_Al.raster == 3
+RTL_Appro_Any <- BL_Appr_Al.raster == 1 | BL_Appr_Al.raster == 2 | BL_Appr_Al.raster == 3 | BL_Appr_Al.raster == 0
+
+int_Dir <- stack(RTL_Conf_N.raster, RTL_Conf_S.raster,RTL_Conf_E.raster,RTL_Conf_W.raster)
+for (i in 1:nlayers(int_Dir)) {
+  RTL_Conf_S <- int_Dir[[i]] == 1
+  RTL_Conf_DE_S <- int_Dir[[i]] == 2 | int_Dir[[i]] == 1
+  title = i
+
+  scoreRTL.temp[RTL_Conf_DE_S & RTL_Length_any & RTL_Appro_Any] <- 4
+  scoreRTL.temp[RTL_Conf_S & RTL_Length_great150 & RTL_Appro_Str] <- 3
+  scoreRTL.temp[RTL_Conf_S & RTL_Length_any & RTL_Appro_Lef] <- 3
+  scoreRTL.temp[RTL_Conf_S & RTL_Length_less150 & RTL_Appro_Str] <- 2
+  scoreRTL <- stack(scoreRTL, scoreRTL.temp)
+  scoreRTL <- overlay(scoreRTL, fun=min)
+  plot(scoreRTL, main=title)
+}
+plot(scoreRTL, main="RTL")
+plot(scoreMix, main="WO Int")
+
+scoreMix_5 <- scoreMix ==5
+scoreRTL_5 <- scoreRTL == 5
+
+scoreMix[scoreMix_5] <- 0
+scoreRTL[scoreRTL_5] <- 0
+
+Mix_RTL <- stack(scoreMix, scoreRTL)
+scoreMixRTL <- overlay(Mix_RTL, fun = max)
+
+plot(scoreMixRTL, main="Score with RTL")
+plot(scoreMix, main="Score w/o Intersection")
