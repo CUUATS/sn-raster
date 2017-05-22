@@ -12,7 +12,6 @@
 
 #USER INPUT
 #*************************************************************************************************************************#
-#*************************************************************************************************************************#
 #set path to the file geodatabase containing feature classes for analysis
 path.fgdb <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
 
@@ -25,15 +24,24 @@ resolution <- 100
 #set path to the study area geodatabase
 boundary.fgdb <- "G:/Resources/Data/Boundary.gdb"
 
+#set path where shapefiles are stored
+shape.path <- "L:/Sustainable Neighborhoods Toolkit/TIFF/"
+
+#set name for the bike shapefile
+bike.name <- "bikeLane.shp"
+
+#set name for total lane shapefile
+totalLane.name <- "TotalLane.shp"
+
+#set name for St CL shapefile
+StreetCL.name <- "StreetCL.shp"
+
 #projection system
 crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 
 #set no path value
 npv <- 5
 
-
-
-#*************************************************************************************************************************#
 #*************************************************************************************************************************#
 
 #LIBRARY NEEDED FOR ANALYSIS
@@ -52,7 +60,6 @@ valid_install
 setwd(wd)
 
 
-
 #READING FEATURE CLASS LINE FILES FROM ESRI GEODATABASE
 #####################################################################################################################
 
@@ -62,11 +69,10 @@ setwd(wd)
 #fc_list
 
 #Read feature class files that contain attribute for analysis
-Street <- readOGR(dsn=path.fgdb, layer = "Street_w_Int_Clip")
-TL <- readOGR(dsn=path.fgdb, layer = "Total_Lanes")
-BikePed <- readOGR(dsn=path.fgdb, layer ="BicyclePedestrianPath_Clip")
+#Street <- readOGR(dsn=path.fgdb, layer = "Street_w_Int_Clip")
+#TL <- readOGR(dsn=path.fgdb, layer = "Total_Lanes")
+#BikePed <- readOGR(dsn=path.fgdb, layer ="BicyclePedestrianPath_Clip")
 UA <- readOGR(dsn=boundary.fgdb, layer="UAB2013")
-print("Finished Importing Files from Geodatabase")
 
 #Set Extent for Test Area
 extent<-extent(UA)
@@ -76,7 +82,7 @@ extent<-extent(UA)
 ###Create a bikelane raster###
 
 #Set path to Bike Lane shapefile
-src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","bikeLane.shp", sep = "")
+src_datasource <- paste(shape.path,bike.name, sep = "")
 
 #Rasterize Path Type
 r.bikelane <- raster(extent(UA), resolution = resolution)
@@ -117,7 +123,7 @@ crs(bikeCrit.raster) <- crs
 ###Create a total lane raster###
 
 #Set Path to Total Lane Shapefile
-src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","TotalLane.shp", sep = "")
+src_datasource <- paste(shape.path,totalLane.name, sep = "")
 
 #Rasterize Total Lane
 r.lanePerDir <- raster(extent(UA), resolution = resolution)
@@ -130,11 +136,11 @@ crs(lanePerDir.raster) <- crs
 #########################################################################################################################
 #StreetCL layer
 #Set path to Street CL shapefile
-src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+src_datasource <- paste(shape.path,StreetCL.name, sep = "")
 r.speed <- raster(extent(UA), resolution = resolution)
 crs(r.speed) <- crs
 speed.tif <- writeRaster(r.speed, filename = "speed.tif", format="GTiff", overwrite=TRUE)
-speed.raster <- gdal_rasterize(src_datasource, dst_filename = "speed.tif", a="SPEED",at=TRUE,output_Raster = TRUE)
+speed.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "speed.tif", a="SPEED",at=TRUE,output_Raster = TRUE)
 crs(speed.raster) <- crs
 
 #########################################################################################################################
@@ -327,22 +333,11 @@ crs(scoreComb) <- crs
 scoreComb[] <- npv
 
 stk <- stack(scoreMix,scoreBike)
-
 scoreComb <- overlay(stk, fun=min)
-#plot(scoreComb, main = "Combine Score w/o Intersection")
-
-
-breakpoints <- c(0,1,2,3,4,5)
-colors <- c("blue","green","orange","red","white")
-plot(scoreComb,breaks=breakpoints,col=colors, main ="Combine Score w/o Intersection")
 
 ###Export score as a GeoTiff
 writeRaster(scoreComb, "scoreComb.tif", format = "GTiff", overwrite=TRUE)
 
-
-end.time <- Sys.time()
-time.taken <- end.time - start.time
-time.taken
 
 #####################################################################################################################
 #####INTERSECTION APPROACH #####
@@ -350,7 +345,7 @@ time.taken
 
 #Rasterize Right Turn Lane Config
 #####################################################################################################################
-src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+src_datasource <- paste(shape.path,StreetCL.name, sep = "")
 r.RTL_Conf_N <- raster(extent(UA), resolution = resolution)
 crs(r.RTL_Conf_N) <- crs
 RTL_Conf_N.tif <- writeRaster(r.RTL_Conf_N, filename = "RTL_Conf_N", format="GTiff", overwrite=TRUE)
@@ -376,7 +371,7 @@ RTL_Conf_W.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_W.t
 crs(RTL_Conf_W.raster) <- crs
 #####################################################################################################################
 #Rasterize Bike Lane Approach
-src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+src_datasource <- paste(shape.path,StreetCL.name, sep = "")
 r.BL_Appr_Al <- raster(extent(UA), resolution = resolution)
 crs(r.BL_Appr_Al) <- crs
 BL_Appr_Al.tif <- writeRaster(r.BL_Appr_Al, filename = "BL_Appr_Al", format="GTiff", overwrite=TRUE)
@@ -384,7 +379,6 @@ BL_Appr_Al.raster <- gdal_rasterize(src_datasource, dst_filename = "BL_Appr_Al.t
 crs(BL_Appr_Al.raster) <- crs
 
 #Rasterize Right Turn Lane Length
-src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
 r.RTL_Length <- raster(extent(UA), resolution = resolution)
 crs(r.RTL_Length) <- crs
 RTL_Length.tif <- writeRaster(r.RTL_Length, filename = "RTL_Length", format="GTiff", overwrite=TRUE)
@@ -427,7 +421,6 @@ for (i in 1:nlayers(int_Dir)) {
   scoreRTL.temp[RTL_Conf_S & RTL_Length_less150 & RTL_Appro_Str] <- 2
   scoreRTL <- stack(scoreRTL, scoreRTL.temp)
   scoreRTL <- overlay(scoreRTL, fun=max)
-  plot(scoreRTL, main=title)
 }
 
 #Overlay the Score w/o intersection and with RTL criteria, assign null value to zero and select the maximum from the two
@@ -440,8 +433,9 @@ Comb_RTL <- stack(scoreComb, scoreRTL)
 scoreCombRTL <- overlay(Comb_RTL, fun = max)
 
 #Plot scores for Comb and with RTL criteria
-plot(scoreComb, main="Score w/o Intersection")
-plot(scoreCombRTL, main="Score with RTL")
+#plot(scoreCombRTL, main="Score with RTL")
+#scoreCombRTL[scoreCombRTL == 0] <- NA
+
 
 ###Export score as a GeoTiff
 writeRaster(scoreCombRTL, "scoreCombRTL.tif", format = "GTiff", overwrite=TRUE)
@@ -451,7 +445,7 @@ writeRaster(scoreCombRTL, "scoreCombRTL.tif", format = "GTiff", overwrite=TRUE)
 
 #rasterize Criteria for Left Turn Lane
 #Lane Cross
-src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+src_datasource <- paste(shape.path,StreetCL.name, sep = "")
 r.LTL_lanesc <- raster(extent(UA), resolution = resolution)
 crs(r.LTL_lanesc) <- crs
 LTL_lanesc.tif <- writeRaster(r.LTL_lanesc, filename = "LTL_lanesc", format="GTiff", overwrite=TRUE)
@@ -524,11 +518,6 @@ for(i in 1:nlayers(LTL_LC_Dir)) {
   laneCrossed_2 <- LTL_LC_Dir[[i]] >= 2
   laneCrossed_DE <- LTL_LC_Dir[[i]] != 0
 
-  plot(laneCrossed_0, main="LC 0")
-  plot(laneCrossed_1, main="LC 1")
-  plot(laneCrossed_2, main="LC 2")
-  plot(laneCrossed_DE, main="LC DE")
-  
   #Scoring based on Exhibit 14-8 Left Turn Lane Criteria
   scoreLTL.temp[sp25 & laneCrossed_0] <- 2
   scoreLTL.temp[sp25 & laneCrossed_1] <- 2
@@ -547,7 +536,6 @@ for(i in 1:nlayers(LTL_LC_Dir)) {
   
   scoreLTL <- stack(scoreLTL, scoreLTL.temp)
   scoreLTL <- overlay(scoreLTL, fun=max)
-  plot(scoreLTL, main=i)
 }
 
 #Write Raster containing only LTL score
@@ -557,11 +545,35 @@ writeRaster(scoreLTL, "scoreLTL.tif", format = "GTiff", overwrite=TRUE)
 score.Comb.RLT.LTL <- raster(extent(UA), resolution=resolution)
 crs(score.Comb.RLT.LTL) <- crs
 score.Comb.RLT.LTL[] <- 0
-
 score.Comb.RLT.LTL <- stack(scoreComb, scoreLTL)
 score.Comb.RLT.LTL <- overlay(score.Comb.RLT.LTL, fun = max)
-plot(score.Comb.RLT.LTL, main="All")
+
+#plotting
+#Plot w/o Int
+breakpoints <- c(0,1,2,3,4)
+colors <- c("blue","green","orange","red")
+scoreComb[scoreComb == 0] <- NA
+plot(scoreComb,breaks=breakpoints,col=colors, main ="Combine Score w/o Intersection")
+
+#Plot w/ RTL
+breakpoints <- c(0,1,2,3,4)
+colors <- c("blue","green","orange","red")
+scoreCombRTL[scoreCombRTL == 0] <- NA
+plot(scoreCombRTL,breaks=breakpoints,col=colors, main ="Combine Score with RTL Criteria")
+
+#Plot only LTL
+scoreLTL[scoreLTL == 0] <- NA
+plot(scoreLTL, breaks=breakpoints,col=colors, main="Score LTL only")
+
+#Plot Comb of all
+score.Comb.RLT.LTL[score.Comb.RLT.LTL == 0] <- NA
+plot(score.Comb.RLT.LTL, breaks=breakpoints,col=colors,main="Combination of All")
+
 
 
 #Write Raster Containin the Score for everything
 writeRaster(score.Comb.RLT.LTL, "scoreAll.tif", format = "GTiff", overwrite=TRUE)
+
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
