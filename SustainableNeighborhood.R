@@ -3,12 +3,38 @@
 #raster files using gdalUtils.  Perform BLTS analysis based on the documentation ODOT report
 #Author: Edmond Lai - CUUATS
 #Last Work on by: Edmond Lai
-#Date Last Worked on: 5/12/2017
+#Date Last Worked on: 5/19/2017
 #Last Worked on: 
-#Corrected lane per direction
+#Finished RTL Criteria
 
 #Need to complete:
-#Intersection approach
+#LTL Criteria
+
+#USER INPUT
+#*************************************************************************************************************************#
+#*************************************************************************************************************************#
+#set path to the file geodatabase containing feature classes for analysis
+path.fgdb <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
+
+#set working Directory
+wd <- "L:/Sustainable Neighborhoods Toolkit/scripts/SustainableNeighborhood"
+
+#Set resolution for raster cell size, this can be changed by the user to fine tune the scale of cell size
+resolution <- 100
+
+#set path to the study area geodatabase
+boundary.fgdb <- "G:/Resources/Data/Boundary.gdb"
+
+#projection system
+crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
+
+#set no path value
+npv <- 5
+
+
+
+#*************************************************************************************************************************#
+#*************************************************************************************************************************#
 
 #LIBRARY NEEDED FOR ANALYSIS
 #####################################################################################################################
@@ -22,27 +48,9 @@ library(gdalUtils)
 valid_install <- !is.null(getOption("gdalUtils_gdalPath"))
 valid_install
 
-#USER INPUT
-#####################################################################################################################
-#set path to the file geodatabase containing feature classes for analysis
-path.fgdb <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
-
-
-#set working Directory
-wd <- "L:/Sustainable Neighborhoods Toolkit/scripts/SustainableNeighborhood"
+#set wd
 setwd(wd)
 
-#Set resolution for raster cell size, this can be changed by the user to fine tune the scale of cell size
-resolution <- 100
-
-#set path to the study area geodatabase
-boundary.fgdb <- "G:/Resources/Data/Boundary.gdb"
-
-#projection system
-crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
-
-#set no path value
-npv <- 5
 
 
 #READING FEATURE CLASS LINE FILES FROM ESRI GEODATABASE
@@ -144,11 +152,7 @@ crs(speed.raster) <- crs
 #Physically Seperated Bike Lane 
 #Input is in BikePed Layer, all the off street facilities are assigned a score of 1, all other type of biking facilities
 #are removed from this layer.  Result is the all off road biking facilities and a GeoTiff is exported for later analysis.
-#offStreetBikeScoreFun <- function(x) {
-#  x[x==1| x==2| x==3| x==4| x==5| x==10] <- 1; 
-#  x[x!=1| x!=2| x!=3| x!=4| x!=5| x!=10] <- 10;
-#  return(x)
-#}
+
 scoreOffStreet <- raster(extent(UA), resolution=resolution)
 crs(scoreOffStreet) <- crs
 scoreOffStreet[] <- npv
@@ -353,21 +357,18 @@ RTL_Conf_N.tif <- writeRaster(r.RTL_Conf_N, filename = "RTL_Conf_N", format="GTi
 RTL_Conf_N.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_N.tif", a="RTL_Conf_N",at=TRUE,output_Raster = TRUE)
 crs(RTL_Conf_N.raster) <- crs
 
-src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
 r.RTL_Conf_S <- raster(extent(UA), resolution = resolution)
 crs(r.RTL_Conf_S) <- crs
 RTL_Conf_S.tif <- writeRaster(r.RTL_Conf_S, filename = "RTL_Conf_S", format="GTiff", overwrite=TRUE)
 RTL_Conf_S.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_S.tif", a="RTL_Conf_S",at=TRUE,output_Raster = TRUE)
 crs(RTL_Conf_S.raster) <- crs
 
-src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
 r.RTL_Conf_E <- raster(extent(UA), resolution = resolution)
 crs(r.RTL_Conf_E) <- crs
 RTL_Conf_E.tif <- writeRaster(r.RTL_Conf_E, filename = "RTL_Conf_E", format="GTiff", overwrite=TRUE)
 RTL_Conf_E.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_E.tif", a="RTL_Conf_E",at=TRUE,output_Raster = TRUE)
 crs(RTL_Conf_E.raster) <- crs
 
-src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
 r.RTL_Conf_W <- raster(extent(UA), resolution = resolution)
 crs(r.RTL_Conf_W) <- crs
 RTL_Conf_W.tif <- writeRaster(r.RTL_Conf_W, filename = "RTL_Conf_W", format="GTiff", overwrite=TRUE)
@@ -397,11 +398,11 @@ crs(RTL_Length.raster) <- crs
 #Create empty raster to store the score
 scoreRTL <- raster(extent(UA), resolution=resolution)
 crs(scoreRTL) <- crs
-scoreRTL[] <- 5
+scoreRTL[] <- 0
 
 scoreRTL.temp <- raster(extent(UA), resolution=resolution)
 crs(scoreRTL.temp) <- crs
-scoreRTL.temp[] <- 5
+scoreRTL.temp[] <- 0
 #####################################################################################################################
 #create T/F layer for the Right-turn lane configuration
 RTL_Length_less150 <-  RTL_Length.raster <= 150 & RTL_Length.raster > 0
@@ -411,31 +412,156 @@ RTL_Appro_Str <- BL_Appr_Al.raster == 1
 RTL_Appro_Lef <- BL_Appr_Al.raster == 2 | BL_Appr_Al.raster == 3
 RTL_Appro_Any <- BL_Appr_Al.raster == 1 | BL_Appr_Al.raster == 2 | BL_Appr_Al.raster == 3 | BL_Appr_Al.raster == 0
 
+#Loop through the RTL Configuration for N, S, E, W and assign score for each direction of the intersection
+#Combine the 
 int_Dir <- stack(RTL_Conf_N.raster, RTL_Conf_S.raster,RTL_Conf_E.raster,RTL_Conf_W.raster)
+names(int_Dir) <- c("North", "South", "East", "West")
+
 for (i in 1:nlayers(int_Dir)) {
   RTL_Conf_S <- int_Dir[[i]] == 1
   RTL_Conf_DE_S <- int_Dir[[i]] == 2 | int_Dir[[i]] == 1
-  title = i
-
+  title = names(int_Dir[[i]])
   scoreRTL.temp[RTL_Conf_DE_S & RTL_Length_any & RTL_Appro_Any] <- 4
   scoreRTL.temp[RTL_Conf_S & RTL_Length_great150 & RTL_Appro_Str] <- 3
   scoreRTL.temp[RTL_Conf_S & RTL_Length_any & RTL_Appro_Lef] <- 3
   scoreRTL.temp[RTL_Conf_S & RTL_Length_less150 & RTL_Appro_Str] <- 2
   scoreRTL <- stack(scoreRTL, scoreRTL.temp)
-  scoreRTL <- overlay(scoreRTL, fun=min)
+  scoreRTL <- overlay(scoreRTL, fun=max)
   plot(scoreRTL, main=title)
 }
-plot(scoreRTL, main="RTL")
-plot(scoreMix, main="WO Int")
 
-scoreMix_5 <- scoreMix ==5
+#Overlay the Score w/o intersection and with RTL criteria, assign null value to zero and select the maximum from the two
+scoreComb_5 <- scoreComb ==5
 scoreRTL_5 <- scoreRTL == 5
 
-scoreMix[scoreMix_5] <- 0
+scoreComb[scoreComb_5] <- 0
 scoreRTL[scoreRTL_5] <- 0
+Comb_RTL <- stack(scoreComb, scoreRTL)
+scoreCombRTL <- overlay(Comb_RTL, fun = max)
 
-Mix_RTL <- stack(scoreMix, scoreRTL)
-scoreMixRTL <- overlay(Mix_RTL, fun = max)
+#Plot scores for Comb and with RTL criteria
+plot(scoreComb, main="Score w/o Intersection")
+plot(scoreCombRTL, main="Score with RTL")
 
-plot(scoreMixRTL, main="Score with RTL")
-plot(scoreMix, main="Score w/o Intersection")
+###Export score as a GeoTiff
+writeRaster(scoreCombRTL, "scoreCombRTL.tif", format = "GTiff", overwrite=TRUE)
+
+#####################################################################################################################
+#Left Turn Lane Criteria
+
+#rasterize Criteria for Left Turn Lane
+#Lane Cross
+src_datasource <- paste("L:/Sustainable Neighborhoods Toolkit/TIFF/","StreetCL.shp", sep = "")
+r.LTL_lanesc <- raster(extent(UA), resolution = resolution)
+crs(r.LTL_lanesc) <- crs
+LTL_lanesc.tif <- writeRaster(r.LTL_lanesc, filename = "LTL_lanesc", format="GTiff", overwrite=TRUE)
+LTL_lanesc.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_lanesc.tif", a="LTL_lanesc",at=TRUE,output_Raster = TRUE)
+crs(LTL_lanesc.raster) <- crs
+
+r.LTL_lane_1 <- raster(extent(UA), resolution = resolution)
+crs(r.LTL_lane_1) <- crs
+LTL_lane_1.tif <- writeRaster(r.LTL_lane_1, filename = "LTL_lane_1", format="GTiff", overwrite=TRUE)
+LTL_lane_1.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_lane_1.tif", a="LTL_lane_1",at=TRUE,output_Raster = TRUE)
+crs(LTL_lane_1.raster) <- crs
+
+r.LTL_lane_2 <- raster(extent(UA), resolution = resolution)
+crs(r.LTL_lane_2) <- crs
+LTL_lane_2.tif <- writeRaster(r.LTL_lane_2, filename = "LTL_lane_2", format="GTiff", overwrite=TRUE)
+LTL_lane_2.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_lane_2.tif", a="LTL_lane_2",at=TRUE,output_Raster = TRUE)
+crs(LTL_lane_2.raster) <- crs
+
+r.LTL_lane_3 <- raster(extent(UA), resolution = resolution)
+crs(r.LTL_lane_3) <- crs
+LTL_lane_3.tif <- writeRaster(r.LTL_lane_3, filename = "LTL_lane_3", format="GTiff", overwrite=TRUE)
+LTL_lane_3.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_lane_3.tif", a="LTL_lane_3",at=TRUE,output_Raster = TRUE)
+crs(LTL_lane_3.raster) <- crs
+#####################################################################################################################
+#Intersection Configuation
+r.LTL_Conf_N <- raster(extent(UA), resolution = resolution)
+crs(r.LTL_Conf_N) <- crs
+LTL_Conf_N.tif <- writeRaster(r.LTL_Conf_N, filename = "LTL_Conf_N", format="GTiff", overwrite=TRUE)
+LTL_Conf_N.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_Conf_N.tif", a="LTL_Conf_N",at=TRUE,output_Raster = TRUE)
+crs(LTL_Conf_N.raster) <- crs
+
+r.LTL_Conf_S <- raster(extent(UA), resolution = resolution)
+crs(r.LTL_Conf_S) <- crs
+LTL_Conf_S.tif <- writeRaster(r.LTL_Conf_S, filename = "LTL_Conf_S", format="GTiff", overwrite=TRUE)
+LTL_Conf_S.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_Conf_S.tif", a="LTL_Conf_S",at=TRUE,output_Raster = TRUE)
+crs(LTL_Conf_S.raster) <- crs
+
+r.LTL_Conf_E <- raster(extent(UA), resolution = resolution)
+crs(r.LTL_Conf_E) <- crs
+LTL_Conf_E.tif <- writeRaster(r.LTL_Conf_E, filename = "LTL_Conf_E", format="GTiff", overwrite=TRUE)
+LTL_Conf_E.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_Conf_E.tif", a="LTL_Conf_E",at=TRUE,output_Raster = TRUE)
+crs(LTL_Conf_E.raster) <- crs
+
+r.LTL_Conf_W <- raster(extent(UA), resolution = resolution)
+crs(r.LTL_Conf_W) <- crs
+LTL_Conf_W.tif <- writeRaster(r.LTL_Conf_W, filename = "LTL_Conf_W", format="GTiff", overwrite=TRUE)
+LTL_Conf_W.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_Conf_W.tif", a="LTL_Conf_W",at=TRUE,output_Raster = TRUE)
+crs(LTL_Conf_W.raster) <- crs
+#####################################################################################################################
+#Create Stack for LTL Criteria
+#LTL_Conf_Dir <- stack(LTL_Conf_N.raster, LTL_Conf_S.raster,LTL_Conf_E.raster,LTL_Conf_W.raster)
+LTL_LC_Dir <- stack(LTL_lanesc.raster, LTL_lane_1.raster, LTL_lane_2.raster, LTL_lane_3.raster)
+
+#Create empty raster to store the score for LTL
+scoreLTL <- raster(extent(UA), resolution=resolution)
+crs(scoreLTL) <- crs
+scoreLTL[] <- 0
+
+scoreLTL.temp <- raster(extent(UA), resolution=resolution)
+crs(scoreLTL.temp) <- crs
+scoreLTL.temp[] <- 0
+
+#creating criteria
+
+#Create evaluation layer for lane crossed in one intersection
+for(i in 1:nlayers(LTL_LC_Dir)) {
+  #Setting criteria for evaluation
+  laneCrossed_0 <- LTL_LC_Dir[[i]] == 0
+  laneCrossed_1 <- LTL_LC_Dir[[i]] == 1
+  laneCrossed_2 <- LTL_LC_Dir[[i]] >= 2
+  laneCrossed_DE <- LTL_LC_Dir[[i]] != 0
+
+  plot(laneCrossed_0, main="LC 0")
+  plot(laneCrossed_1, main="LC 1")
+  plot(laneCrossed_2, main="LC 2")
+  plot(laneCrossed_DE, main="LC DE")
+  
+  #Scoring based on Exhibit 14-8 Left Turn Lane Criteria
+  scoreLTL.temp[sp25 & laneCrossed_0] <- 2
+  scoreLTL.temp[sp25 & laneCrossed_1] <- 2
+  scoreLTL.temp[sp25 & laneCrossed_2] <- 3
+  scoreLTL.temp[sp25 & laneCrossed_DE] <- 4
+  
+  scoreLTL.temp[sp30 & laneCrossed_0] <- 2
+  scoreLTL.temp[sp30 & laneCrossed_1] <- 3
+  scoreLTL.temp[sp30 & laneCrossed_2] <- 4
+  scoreLTL.temp[sp30 & laneCrossed_DE] <- 4
+  
+  scoreLTL.temp[spgreat35 & laneCrossed_0] <- 3
+  scoreLTL.temp[spgreat35 & laneCrossed_1] <- 4
+  scoreLTL.temp[spgreat35 & laneCrossed_2] <- 4
+  scoreLTL.temp[spgreat35 & laneCrossed_DE] <- 4
+  
+  scoreLTL <- stack(scoreLTL, scoreLTL.temp)
+  scoreLTL <- overlay(scoreLTL, fun=max)
+  plot(scoreLTL, main=i)
+}
+
+#Write Raster containing only LTL score
+writeRaster(scoreLTL, "scoreLTL.tif", format = "GTiff", overwrite=TRUE)
+
+#Combinging the Score with Mixed Used, Bike Lane, RLT and LTL
+score.Comb.RLT.LTL <- raster(extent(UA), resolution=resolution)
+crs(score.Comb.RLT.LTL) <- crs
+score.Comb.RLT.LTL[] <- 0
+
+score.Comb.RLT.LTL <- stack(scoreComb, scoreLTL)
+score.Comb.RLT.LTL <- overlay(score.Comb.RLT.LTL, fun = max)
+plot(score.Comb.RLT.LTL, main="All")
+
+
+#Write Raster Containin the Score for everything
+writeRaster(score.Comb.RLT.LTL, "scoreAll.tif", format = "GTiff", overwrite=TRUE)
