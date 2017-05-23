@@ -15,6 +15,7 @@
 library(raster)
 library(rgdal)
 library(gdalUtils)
+library(RColorBrewer)
 
 #USER INPUT
 #*************************************************************************************************************************#
@@ -476,7 +477,7 @@ for(i in 1:nlayers(LTL_LC_Dir)) {
   scoreLTL <- stack(scoreLTL, scoreLTL.temp)
   scoreLTL <- overlay(scoreLTL, fun=max)
 }
-
+#####################################################################################################################
 #Write Raster containing only LTL score
 filename <- paste("scoreLTL", resolution)
 writeRaster(scoreLTL, filename, format = "GTiff", overwrite=TRUE)
@@ -486,7 +487,7 @@ score.Comb.RLT.LTL <- raster(ext=extent, resolution = resolution, crs = crs)
 score.Comb.RLT.LTL[] <- 0
 score.Comb.RLT.LTL <- stack(scoreComb, scoreLTL)
 score.Comb.RLT.LTL <- overlay(score.Comb.RLT.LTL, fun = max)
-
+#####################################################################################################################
 #plotting
 #Plot only biking facilities
 breakpoints <- c(0,1,2,3,4)
@@ -521,7 +522,18 @@ plot(score.Comb.RLT.LTL, breaks=breakpoints,col=colors,main=title)
 #Write Raster Containin the Score for everything
 filename <- paste("scoreComb", resolution)
 writeRaster(score.Comb.RLT.LTL, filename, format = "GTiff", overwrite=TRUE)
+#####################################################################################################################
+#Detect Island of activities
+#Score 1 and 2 cluster
+score12 <- score.Comb.RLT.LTL
+score12[score12 == 3 | score12 == 4] <- NA
+plot(score12)
+c.score12 <- clump(score12, directions = 8)
+plot(c.score12, main = "Island of score of 1 and 2")
 
+
+#####################################################################################################################
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
+
