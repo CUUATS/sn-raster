@@ -46,8 +46,8 @@ totalLane.name <- "TotalLane.shp"
 #set name for St CL shapefile
 StreetCL.name <- "StreetCL.shp"
 
-#set path to aeiral photo
-photo.path <- 
+#set path to intersection
+Int.name <- "intersection.shp"
 
 #projection system
 crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
@@ -523,6 +523,74 @@ plot(score.Comb.RLT.LTL, breaks=breakpoints,col=colors,main=title)
 filename <- paste("scoreComb", resolution)
 writeRaster(score.Comb.RLT.LTL, filename, format = "GTiff", overwrite=TRUE)
 #####################################################################################################################
+#rasterize maxspeed
+Street <- readOGR(dsn=path.fgdb, layer = "Street_w_Int_Clip")
+maxsp <- raster(ext=extent, resolution = resolution, crs = crs)
+maxsp <- rasterize(Street, maxsp, field="SPEED", fun='max')
+crs(maxsp) <- crs
+
+#rasterize intersections total lanecrossed
+src_datasource <- paste(shape.path,Int.name, sep = "")
+r.totallanes_ns <- raster(ext=extent, resolution = resolution, crs = crs)
+totallanes_ns.tif <- writeRaster(r.totallanes_ns, filename = "totallanes_ns", format="GTiff", overwrite=TRUE)
+totallanes_ns.raster <- gdal_rasterize(src_datasource, dst_filename = "totallanes_ns.tif", a="TotalLanes",at=TRUE,output_Raster = TRUE)
+crs(totallanes_ns.raster) <- crs
+
+r.totallanes_ew <- raster(ext=extent, resolution = resolution, crs = crs)
+totallanes_ew.tif <- writeRaster(r.totallanes_ew, filename = "totallanes_ew", format="GTiff", overwrite=TRUE)
+totallanes_ew.raster <- gdal_rasterize(src_datasource, dst_filename = "totallanes_ew.tif", a="TotalLan_1",at=TRUE,output_Raster = TRUE)
+crs(totallanes_ew.raster) <- crs
+
+#rasterize median (Y/N)
+r.median <- raster(ext=extent, resolution = resolution, crs = crs)
+median.tif <- writeRaster(r.median, filename = "median.tif", format="GTiff", overwrite=TRUE)
+median.raster <- gdal_rasterize(src_datasource, dst_filename = "median.tif", a="med_ref",at=TRUE,output_Raster = TRUE)
+crs(median.raster) <- crs
+
+
+scoreMed <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreMed[] <- npv
+
+#Criterias for Median
+median.true <- median.raster == 1
+median.false <- median.raster == 0 
+
+sp25 <- maxsp <= 25
+sp30 <- maxsp == 30
+sp35 <- maxsp == 35
+sp40 <- maxsp >= 40
+
+tlc3 <- totallanes_ns.raster <= 3
+tlc45 <- totallanes_ns.raster == 4 | totallanes_ns.raster == 5
+tlc6 <- totallanes_ns.raster >= 6
+
+scoreMed[median.true & sp25 & tlc3] <- 1
+scoreMed[median.true & sp25 & tlc45] <- 2
+scoreMed[median.true & sp25 & tlc6] <- 4
+
+scoreMed[median.true & sp30 & tlc3] <- 1
+scoreMed[median.true & sp30 & tlc45] <- 2
+scoreMed[median.true & sp30 & tlc6] <- 4
+
+scoreMed[median.true & sp35 & tlc3] <- 2
+scoreMed[median.true & sp35 & tlc45] <- 3
+scoreMed[median.true & sp35 & tlc6] <- 4
+
+scoreMed[median.true & sp40 & tlc3] <- 3
+scoreMed[median.true & sp40 & tlc45] <- 4
+scoreMed[median.true & sp40 & tlc6] <- 4
+
+plot(scoreMed)
+
+
+
+
+
+
+
+
+#####################################################################################################################
+
 #Detect Island of activities
 #Score 1 and 2 cluster
 score12 <- score.Comb.RLT.LTL
