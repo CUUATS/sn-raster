@@ -8,7 +8,7 @@
 #Finished RTL Criteria
 
 #Need to complete:
-#LTL Criteria
+#Work on the completion median intersection approach
 
 #LIBRARY NEEDED FOR ANALYSIS
 #####################################################################################################################
@@ -564,6 +564,11 @@ tlc3 <- totallanes_ns.raster <= 3
 tlc45 <- totallanes_ns.raster == 4 | totallanes_ns.raster == 5
 tlc6 <- totallanes_ns.raster >= 6
 
+tlc12 <- totallanes_ns.raster == 1 | totallanes_ns.raster == 2
+tlcGreat4 <- totallanes_ns.raster >= 4
+
+
+#Score for Has Median
 scoreMed[median.true & sp25 & tlc3] <- 1
 scoreMed[median.true & sp25 & tlc45] <- 2
 scoreMed[median.true & sp25 & tlc6] <- 4
@@ -582,11 +587,22 @@ scoreMed[median.true & sp40 & tlc6] <- 4
 
 plot(scoreMed)
 
+#Score for no median
+scoreMed[median.false & sp25 & tlc12] <- 1
+scoreMed[median.false & sp25 & tlc3] <- 1
+scoreMed[median.false & sp25 & tlcGreat4] <- 2
 
+scoreMed[median.false & sp30 & tlc12] <- 1
+scoreMed[median.false & sp30 & tlc3] <- 2
+scoreMed[median.false & sp30 & tlcGreat4] <- 3
 
+scoreMed[median.false & sp35 & tlc12] <- 2
+scoreMed[median.false & sp35 & tlc3] <- 3
+scoreMed[median.false & sp35 & tlcGreat4] <- 4
 
-
-
+scoreMed[median.false & sp40 & tlc12] <- 3
+scoreMed[median.false & sp40 & tlc3] <- 4
+scoreMed[median.false & sp40 & tlcGreat4] <- 4
 
 
 #####################################################################################################################
