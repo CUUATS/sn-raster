@@ -10,16 +10,11 @@
 #Need to complete:
 #LTL Criteria
 
-
+#LIBRARY NEEDED FOR ANALYSIS
+#####################################################################################################################
 library(raster)
 library(rgdal)
 library(gdalUtils)
-
-#valid install gdalUtils?
-valid_install <- !is.null(getOption("gdalUtils_gdalPath"))
-valid_install
-
-
 
 #USER INPUT
 #*************************************************************************************************************************#
@@ -50,25 +45,23 @@ totalLane.name <- "TotalLane.shp"
 #set name for St CL shapefile
 StreetCL.name <- "StreetCL.shp"
 
+#set path to aeiral photo
+photo.path <- 
+
 #projection system
 crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 
-#set no path value
+#set no path value (In Progress)
 npv <- 5
 
 #*************************************************************************************************************************#
 
-#LIBRARY NEEDED FOR ANALYSIS
-#####################################################################################################################
 start.time <- Sys.time()
 
 
 #READING FEATURE CLASS LINE FILES FROM ESRI GEODATABASE
 #####################################################################################################################
-
-# List all feature classes in a file geodatabase
-
-#Read feature class files that contain attribute for analysis
+#Read Boundary for the study area
 UA <- readOGR(dsn=boundary.fgdb, layer="UAB2013")
 
 #Set Extent for Test Area
@@ -76,8 +69,6 @@ extent<-extent(UA)
 
 ####CREATE A RASTER LAYER OBJECT (In Progress)####
 #########################################################################################################################
-###Create a bikelane raster###
-
 #Set path to Bike Lane shapefile
 src_datasource <- paste(shape.path,bike.name, sep = "")
 
@@ -107,8 +98,8 @@ crs(bikeParkWidth.raster) <- crs
 
 ###Create Bike Lane with Adjacent Parking Lane Criteria
 r.bikeCrit <- raster(ext=extent, resolution = resolution, crs = crs)
-
-bikeCrit.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikeParkWidth.tif", a="hasParki_1",at=TRUE,output_Raster = TRUE)
+bikeCrit.tif <- writeRaster(r.bikeCrit, filename = "bikeCrit.tif", format="GTiff", overwrite=TRUE)
+bikeCrit.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikeCrit.tif", a="hasParki_1",at=TRUE,output_Raster = TRUE)
 crs(bikeCrit.raster) <- crs
 
 #########################################################################################################################
@@ -119,7 +110,7 @@ src_datasource <- paste(shape.path,totalLane.name, sep = "")
 
 #Rasterize Total Lane
 r.lanePerDir <- raster(ext=extent, resolution = resolution, crs = crs)
-lanePerdir.tif <- writeRaster(r.lanePerDir, filename = "lanePerdir", format="GTiff", overwrite=TRUE)
+lanePerdir.tif <- writeRaster(r.lanePerDir, filename = "lanePerdir.tif", format="GTiff", overwrite=TRUE)
 lanePerDir.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "lanePerdir.tif", a="lanePerDir",at=TRUE,output_Raster = TRUE)
 crs(lanePerDir.raster) <- crs
 
@@ -133,14 +124,6 @@ speed.tif <- writeRaster(r.speed, filename = "speed.tif", format="GTiff", overwr
 speed.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "speed.tif", a="SPEED",at=TRUE,output_Raster = TRUE)
 crs(speed.raster) <- crs
 
-#########################################################################################################################
-###Create an BLTS Layer that will contain the score from BLTS analysis
-#blts <- raster()
-#extent(blts) = extent(Street)
-#res(blts) = resolution
-#`values<-`(blts,0)
-
-
 #FUNCTIONS TO BE USED IN THE BLTS SCORE ANALYSIS (In Progress)
 #####################################################################################################################
 #Assign score of Off Street Biking to a score of 1
@@ -149,8 +132,11 @@ crs(speed.raster) <- crs
 #Input is in BikePed Layer, all the off street facilities are assigned a score of 1, all other type of biking facilities
 #are removed from this layer.  Result is the all off road biking facilities and a GeoTiff is exported for later analysis.
 
-scoreOffStreet <- raster(ext=extent, resolution = resolution, crs = crs)
-scoreOffStreet[] <- npv
+#scoreOffStreet <- raster(ext=extent, resolution = resolution, crs = crs)
+#scoreOffStreet[] <- npv
+
+scoreBike <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreBike[] <- npv
 
 osft1 <- facility.raster == 1
 osft2 <- facility.raster == 2
@@ -159,24 +145,14 @@ osft4 <- facility.raster == 4
 osft5 <- facility.raster == 5
 osft10 <- facility.raster == 10
 
-scoreOffStreet[osft1 | osft2 | osft3 | osft4 | osft5 | osft10] <- 1
+scoreBike[osft1 | osft2 | osft3 | osft4 | osft5 | osft10] <- 1
 
 
-#writeRaster(offStreetBikeScore.ras, "offStreetBikeScore.tif", format = "GTiff", overwrite=TRUE)
-#####################################################################################################################
-#Assign on street biking facilities based on number of lane per direction, prevailing speed, and width of street
-#Calculate a new raster containing lane per direction
-#lanePerDirectionFun <- function(x) {
-#  x%/%2;
-#}
-
-#lanePerDirection.raster <- calc(totalLane.raster, lanePerDirectionFun)
-#crs(lanePerDirection.raster) <- crs
 #####################################################################################################################
 ####Create new layer for each criteria#
 
 
-#Bike Criteria (Does the bike lane has adj parkign? 1 - yes, 0 - no)
+#Bike Criteria (Does the bike lane has adj parking? 1 - yes, 0 - no)
 ly <- bikeCrit.raster == 1
 ln <- bikeCrit.raster == 0 
 
@@ -213,6 +189,9 @@ lane3 <- lanePerDir.raster >= 3
 
 #No bike Lane but has sharrow
 sharrow <- facility.raster == 8
+sharrow[sharrow != 1] <- 0
+sharrow[is.na(sharrow)] <- 0
+sharrow[sharrow == 1] <- -1
 
 
 #####################################################################################################################
@@ -225,16 +204,7 @@ allBike <- is.na(facility.raster) == FALSE
 #Bike Path Type
 bikelane <- facility.raster == 6 | facility.raster == 9
 
-
-scoreBike <- raster(ext=extent, resolution = resolution, crs = crs)
-scoreBike[] <- npv
-
 #Set the default score for all biking facilities
-scoreBike[allBike] <- 2
-
-scoreBLwP <- raster(ext=extent, resolution = resolution, crs = crs)
-scoreBLwP[] <- npv
-
 scoreBike[bikelane & ly & lpd1 & sp25 & bpw15] <- 1
 scoreBike[bikelane & ly & lpd1 & sp30 & bpw15] <- 1
 scoreBike[bikelane & ly & lpd1 & sp35 & bpw15] <- 2
@@ -262,8 +232,6 @@ scoreBike[bikelane & ly & lpd2 & sp40 & bpw2] <- 4
 
 #####################################################################################################################
 ###Exhibit 14-4 Bike Lane without Adjacent Parking Lane Criteria
-scoreBLwoP <- raster(ext=extent, resolution = resolution, crs = crs)
-scoreBLwoP[] <- npv
 
 scoreBike[bikelane & ln & lpd1 & spless30 & bwgreat7] <- 1
 scoreBike[bikelane & ln & lpd1 & sp35 & bwgreat7] <- 2
@@ -284,6 +252,7 @@ scoreBike[bikelane & ln & lpd2 & sp40 & bwgreat7] <- 3
 scoreBike[bikelane & ln & lpd2 & spless30 & bwless7] <- 3
 scoreBike[bikelane & ln & lpd2 & sp35 & bwless7] <- 3
 scoreBike[bikelane & ln & lpd2 & sp40 & bwless7] <- 4
+
 #####################################################################################################################
 ### Exhibit 14-5 Urban/Suburban Mixed used with Biking Facilities
 
@@ -308,14 +277,16 @@ scoreMix[sp25 & lane3] <- 4
 scoreMix[sp30 & lane3] <- 4
 scoreMix[spgreat35 & lane3] <- 4
 
-#####################################################################################################################
-###plot score of Bike
-plot(scoreBike, main = "Score for all biking facilities")
 
-##plot score comb
+#Lower the BLTS score by one if sharrow is present
+scoreMix <- scoreMix + sharrow
+scoreMix[scoreMix == 0] <- 1
+
+#####################################################################################################################
+
+##Calculate Combine Score for bike facilities and mix used traffic
 scoreComb <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreComb[] <- npv
-
 stk <- stack(scoreMix,scoreBike)
 scoreComb <- overlay(stk, fun=min)
 
@@ -517,7 +488,14 @@ score.Comb.RLT.LTL <- stack(scoreComb, scoreLTL)
 score.Comb.RLT.LTL <- overlay(score.Comb.RLT.LTL, fun = max)
 
 #plotting
-#Plot w/o Int
+#Plot only biking facilities
+breakpoints <- c(0,1,2,3,4)
+colors <- c("blue","green","orange","red")
+scoreBike[scoreBike == 5] <- NA
+title <- paste("Score with only biking faciliities - Res:", resolution)
+plot(scoreBike,breaks=breakpoints,col=colors, main =title)
+
+#Plot Mix traffic w/o Int
 breakpoints <- c(0,1,2,3,4)
 colors <- c("blue","green","orange","red")
 scoreComb[scoreComb == 0] <- NA
@@ -540,7 +518,6 @@ plot(scoreLTL, breaks=breakpoints,col=colors, main=title)
 score.Comb.RLT.LTL[score.Comb.RLT.LTL == 0] <- NA
 title <- paste("score Combination all - Res:", resolution)
 plot(score.Comb.RLT.LTL, breaks=breakpoints,col=colors,main=title)
-
 #Write Raster Containin the Score for everything
 filename <- paste("scoreComb", resolution)
 writeRaster(score.Comb.RLT.LTL, filename, format = "GTiff", overwrite=TRUE)
