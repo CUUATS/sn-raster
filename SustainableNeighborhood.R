@@ -16,6 +16,7 @@ library(raster)
 library(rgdal)
 library(gdalUtils)
 library(RColorBrewer)
+library(gdistance)
 
 #USER INPUT
 #*************************************************************************************************************************#
@@ -596,6 +597,9 @@ for (i in nlayers(tl_stack)) {
 scoreALL <- stack(score.Comb.RLT.LTL, scoreMed)
 scoreALL <- overlay(scoreALL, fun=max)
 
+filename <- paste("scoreALL", resolution)
+writeRaster(scoreALL, filename, format = "GTiff", overwrite=TRUE)
+
 
 #####################################################################################################################
 #plotting
@@ -640,8 +644,6 @@ title <- paste("score ALL - Res: ", resolution)
 plot(scoreALL, breaks=breakpoints,col=colors, main=title)
 #####################################################################################################################
 
-
-
 #Detect Island of activities
 #Score 1 and 2 cluster
 score12 <- score.Comb.RLT.LTL
@@ -651,6 +653,33 @@ c.score12 <- clump(score12, directions = 8)
 plot(c.score12, main = "Island of score of 1 and 2")
 
 
+#####################################################################################################################
+#Route calculation
+
+#plot test point
+testpoint <- readOGR(dsn=path.fgdb, layer = "testpoint")
+crs(testpoint) <-crs
+plot(testpoint, add = TRUE)
+
+#create transition class from score layer
+
+scoretest <- scoreALL
+scoretest[is.na(scoretest)] <- 9999
+tr1 <- transition(scoretest, function(x) 1/mean(x), direction=4)
+plot(scoretest)
+#tr1C <- geoCorrection(tr1)
+#commuteDistance(tr1C, testpoint)
+
+C <- c(1000000,1240000)
+U <- c(1030000,1260000)
+CtoU <- shortestPath(tr1, C, U, output="SpatialLines")
+crs(CtoU) <- crs
+plot(CtoU, add=TRUE)
+
+df <- data.frame(id = c(1,2))
+CtoU <- SpatialLinesDataFrame(CtoU, df)
+dir.create(tempdir)
+writeOGR(CtoU, dsn="tempdir", layer="CtoU", driver="ESRI Shapefile", overwrite_layer = TRUE)
 #####################################################################################################################
 end.time <- Sys.time()
 time.taken <- end.time - start.time
