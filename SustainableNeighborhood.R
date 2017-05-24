@@ -439,41 +439,39 @@ scoreLTL.temp[] <- 0
 LTL_Conf_Dir <- stack(LTL_Conf_N.raster, LTL_Conf_S.raster,LTL_Conf_E.raster,LTL_Conf_W.raster)
 LTL_LC_Dir <- stack(LTL_lanesc.raster, LTL_lane_1.raster, LTL_lane_2.raster, LTL_lane_3.raster)
 
-for (i in 1:nlayers(LTL_Conf_Dir)) {
-  #Create evaluation layer for lane crossed in one intersection
-  for(i in 1:nlayers(LTL_LC_Dir)) {
-    #Setting criteria for evaluation
-    laneCrossed_0 <- LTL_LC_Dir[[i]] == 0
-    laneCrossed_1 <- LTL_LC_Dir[[i]] == 1
-    laneCrossed_2 <- LTL_LC_Dir[[i]] >= 2
-    laneCrossed_DE <- LTL_Conf_Dir[[i]] != 0
+#Create evaluation layer for lane crossed in one intersection
+for(i in 1:nlayers(LTL_LC_Dir)) {
+  #Setting criteria for evaluation
+  laneCrossed_0 <- LTL_LC_Dir[[i]] == 0
+  laneCrossed_1 <- LTL_LC_Dir[[i]] == 1
+  laneCrossed_2 <- LTL_LC_Dir[[i]] >= 2
+  laneCrossed_DE <- LTL_Conf_Dir[[i]] != 0
+
+  #Scoring based on Exhibit 14-8 Left Turn Lane Criteria
+  scoreLTL.temp[sp25 & laneCrossed_0] <- 2
+  scoreLTL.temp[sp25 & laneCrossed_1] <- 2
+  scoreLTL.temp[sp25 & laneCrossed_2] <- 3
+  scoreLTL.temp[sp25 & laneCrossed_DE] <- 4
   
-    #Scoring based on Exhibit 14-8 Left Turn Lane Criteria
-    scoreLTL.temp[sp25 & laneCrossed_0] <- 2
-    scoreLTL.temp[sp25 & laneCrossed_1] <- 2
-    scoreLTL.temp[sp25 & laneCrossed_2] <- 3
-    scoreLTL.temp[sp25 & laneCrossed_DE] <- 4
-    
-    scoreLTL.temp[sp30 & laneCrossed_0] <- 2
-    scoreLTL.temp[sp30 & laneCrossed_1] <- 3
-    scoreLTL.temp[sp30 & laneCrossed_2] <- 4
-    scoreLTL.temp[sp30 & laneCrossed_DE] <- 4
-    
-    scoreLTL.temp[spgreat35 & laneCrossed_0] <- 3
-    scoreLTL.temp[spgreat35 & laneCrossed_1] <- 4
-    scoreLTL.temp[spgreat35 & laneCrossed_2] <- 4
-    scoreLTL.temp[spgreat35 & laneCrossed_DE] <- 4
-    
-    scoreLTL <- stack(scoreLTL, scoreLTL.temp)
-    scoreLTL <- overlay(scoreLTL, fun=max)
-  }
+  scoreLTL.temp[sp30 & laneCrossed_0] <- 2
+  scoreLTL.temp[sp30 & laneCrossed_1] <- 3
+  scoreLTL.temp[sp30 & laneCrossed_2] <- 4
+  scoreLTL.temp[sp30 & laneCrossed_DE] <- 4
+  
+  scoreLTL.temp[spgreat35 & laneCrossed_0] <- 3
+  scoreLTL.temp[spgreat35 & laneCrossed_1] <- 4
+  scoreLTL.temp[spgreat35 & laneCrossed_2] <- 4
+  scoreLTL.temp[spgreat35 & laneCrossed_DE] <- 4
+  
+  scoreLTL <- stack(scoreLTL, scoreLTL.temp)
+  scoreLTL <- overlay(scoreLTL, fun=max)
 }
 #####################################################################################################################
 #Write Raster containing only LTL score
 filename <- paste("scoreLTL", resolution)
 writeRaster(scoreLTL, filename, format = "GTiff", overwrite=TRUE)
 
-#Combinging the Score with Mixed Used, Bike Lane, RLT and LTL
+#Combinging the Score with Mixed Used, Bike Lane, RLT and LTL (Section E4)
 score.Comb.RLT.LTL <- raster(ext=extent, resolution = resolution, crs = crs)
 score.Comb.RLT.LTL[] <- 0
 score.Comb.RLT.LTL <- stack(scoreComb, scoreLTL)
@@ -486,6 +484,7 @@ score.Comb.RLT.LTL <- overlay(score.Comb.RLT.LTL, fun = max)
 filename <- paste("scoreComb", resolution)
 writeRaster(score.Comb.RLT.LTL, filename, format = "GTiff", overwrite=TRUE)
 #####################################################################################################################
+#Median Criteria (Section F)
 #rasterize maxspeed
 Street <- readOGR(dsn=path.fgdb, layer = "Street_w_Int_Clip")
 maxsp <- raster(ext=extent, resolution = resolution, crs = crs)
@@ -509,6 +508,13 @@ r.median <- raster(ext=extent, resolution = resolution, crs = crs)
 median.tif <- writeRaster(r.median, filename = "median.tif", format="GTiff", overwrite=TRUE)
 median.raster <- gdal_rasterize(src_datasource, dst_filename = "median.tif", a="med_ref",at=TRUE,output_Raster = TRUE)
 crs(median.raster) <- crs
+
+#raster signalized intersection (Y/N)
+r.signal <- raster(ext=extent, resolution = resolution, crs = crs)
+signal.tif <- writeRaster(r.signal, filename = "signal.tif", format="GTiff", overwrite=TRUE)
+signal.raster <- gdal_rasterize(src_datasource, dst_filename = "signal.tif", a="signal",at=TRUE,output_Raster = TRUE)
+crs(signal.raster) <- crs
+
 #####################################################################################################################
 
 #create an empty score layer for Median criteria
@@ -520,12 +526,16 @@ scoreMed.temp[] <- 0
 
 #Criterias for Median
 median.true <- median.raster == 1
-median.false <- median.raster == 0 
+median.false <- median.raster == 0
 
+#mask for speed
 sp25 <- maxsp <= 25
 sp30 <- maxsp == 30
 sp35 <- maxsp == 35
 sp40 <- maxsp >= 40
+
+#mask for unsignalized intersection
+unsignal <- signal.raster == 0
 
 #stack the total lane ns and ew together
 tl_stack <- stack(totallanes_ns.raster, totallanes_ew.raster)
@@ -537,21 +547,21 @@ for (i in 1:nlayers(tl_stack)) {
   tlc45 <- tl_stack[[i]] == 4 | tl_stack[[i]] == 5
   tlc6 <- tl_stack[[i]] >= 6
   
-  scoreMed.temp[median.true & sp25 & tlc3] <- 1
-  scoreMed.temp[median.true & sp25 & tlc45] <- 2
-  scoreMed.temp[median.true & sp25 & tlc6] <- 4
+  scoreMed.temp[unsignal & median.true & sp25 & tlc3] <- 1
+  scoreMed.temp[unsignal & median.true & sp25 & tlc45] <- 2
+  scoreMed.temp[unsignal & median.true & sp25 & tlc6] <- 4
   
-  scoreMed.temp[median.true & sp30 & tlc3] <- 1
-  scoreMed.temp[median.true & sp30 & tlc45] <- 2
-  scoreMed.temp[median.true & sp30 & tlc6] <- 4
+  scoreMed.temp[unsignal & median.true & sp30 & tlc3] <- 1
+  scoreMed.temp[unsignal & median.true & sp30 & tlc45] <- 2
+  scoreMed.temp[unsignal & median.true & sp30 & tlc6] <- 4
   
-  scoreMed.temp[median.true & sp35 & tlc3] <- 2
-  scoreMed.temp[median.true & sp35 & tlc45] <- 3
-  scoreMed.temp[median.true & sp35 & tlc6] <- 4
+  scoreMed.temp[unsignal & median.true & sp35 & tlc3] <- 2
+  scoreMed.temp[unsignal & median.true & sp35 & tlc45] <- 3
+  scoreMed.temp[unsignal & median.true & sp35 & tlc6] <- 4
   
-  scoreMed.temp[median.true & sp40 & tlc3] <- 3
-  scoreMed.temp[median.true & sp40 & tlc45] <- 4
-  scoreMed.temp[median.true & sp40 & tlc6] <- 4
+  scoreMed.temp[unsignal & median.true & sp40 & tlc3] <- 3
+  scoreMed.temp[unsignal & median.true & sp40 & tlc45] <- 4
+  scoreMed.temp[unsignal & median.true & sp40 & tlc6] <- 4
   
   scoreMed <- stack(scoreMed, scoreMed.temp)
   scoreMed <- overlay(scoreMed, fun=max)
@@ -564,21 +574,21 @@ for (i in nlayers(tl_stack)) {
   tlc12 <- tl_stack[[i]] == 1 | tl_stack[[i]] == 2
   tlcGreat4 <- tl_stack[[i]] >= 4
   
-  scoreMed.temp[median.false & sp25 & tlc12] <- 1
-  scoreMed.temp[median.false & sp25 & tlc3] <- 1
-  scoreMed.temp[median.false & sp25 & tlcGreat4] <- 2
+  scoreMed.temp[unsignal & median.false & sp25 & tlc12] <- 1
+  scoreMed.temp[unsignal & median.false & sp25 & tlc3] <- 1
+  scoreMed.temp[unsignal & median.false & sp25 & tlcGreat4] <- 2
   
-  scoreMed.temp[median.false & sp30 & tlc12] <- 1
-  scoreMed.temp[median.false & sp30 & tlc3] <- 2
-  scoreMed.temp[median.false & sp30 & tlcGreat4] <- 3
+  scoreMed.temp[unsignal & median.false & sp30 & tlc12] <- 1
+  scoreMed.temp[unsignal & median.false & sp30 & tlc3] <- 2
+  scoreMed.temp[unsignal & median.false & sp30 & tlcGreat4] <- 3
   
-  scoreMed.temp[median.false & sp35 & tlc12] <- 2
-  scoreMed.temp[median.false & sp35 & tlc3] <- 3
-  scoreMed.temp[median.false & sp35 & tlcGreat4] <- 4
+  scoreMed.temp[unsignal & median.false & sp35 & tlc12] <- 2
+  scoreMed.temp[unsignal & median.false & sp35 & tlc3] <- 3
+  scoreMed.temp[unsignal & median.false & sp35 & tlcGreat4] <- 4
   
-  scoreMed.temp[median.false & sp40 & tlc12] <- 3
-  scoreMed.temp[median.false & sp40 & tlc3] <- 4
-  scoreMed.temp[median.false & sp40 & tlcGreat4] <- 4
+  scoreMed.temp[unsignal & median.false & sp40 & tlc12] <- 3
+  scoreMed.temp[unsignal & median.false & sp40 & tlc3] <- 4
+  scoreMed.temp[unsignal & median.false & sp40 & tlcGreat4] <- 4
   
   scoreMed <- stack(scoreMed, scoreMed.temp)
   scoreMed <- overlay(scoreMed, fun=max)
@@ -630,6 +640,7 @@ title <- paste("score Intersection crossing - Res:", resolution)
 plot(scoreMed, breaks=breakpoints,col=colors, main=title)
 
 #Plot ALL
+scoreALL[scoreALL == 0] <- NA
 title <- paste("score ALL - Res: ", resolution)
 plot(scoreALL, breaks=breakpoints,col=colors, main=title)
 #####################################################################################################################
@@ -645,24 +656,18 @@ plot(c.score12, main = "Island of score of 1 and 2")
 
 #####################################################################################################################
 #Route calculation
-
-#plot test point
-testpoint <- readOGR(dsn=path.fgdb, layer = "testpoint")
-crs(testpoint) <-crs
-plot(testpoint, add = TRUE)
-
 #create transition class from score layer
 
 scoretest <- scoreALL
 scoretest[is.na(scoretest)] <- 9999
 tr1 <- transition(scoretest, function(x) 1/mean(x), direction=4)
 plot(scoretest)
-#tr1C <- geoCorrection(tr1)
+tr1C <- geoCorrection(tr1)
 #commuteDistance(tr1C, testpoint)
 
 C <- c(1000000,1240000)
 U <- c(1030000,1260000)
-CtoU <- shortestPath(tr1, C, U, output="SpatialLines")
+CtoU <- shortestPath(tr1C, C, U, output="SpatialLines")
 crs(CtoU) <- crs
 plot(CtoU, add=TRUE)
 
