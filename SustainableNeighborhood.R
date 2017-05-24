@@ -488,37 +488,9 @@ score.Comb.RLT.LTL[] <- 0
 score.Comb.RLT.LTL <- stack(scoreComb, scoreLTL)
 score.Comb.RLT.LTL <- overlay(score.Comb.RLT.LTL, fun = max)
 #####################################################################################################################
-#plotting
-#Plot only biking facilities
-breakpoints <- c(0,1,2,3,4)
-colors <- c("blue","green","orange","red")
-scoreBike[scoreBike == 5] <- NA
-title <- paste("Score with only biking faciliities - Res:", resolution)
-plot(scoreBike,breaks=breakpoints,col=colors, main =title)
 
-#Plot Mix traffic w/o Int
-breakpoints <- c(0,1,2,3,4)
-colors <- c("blue","green","orange","red")
-scoreComb[scoreComb == 0] <- NA
-title <- paste("Combine Score w/o Intersection - Res:", resolution)
-plot(scoreComb,breaks=breakpoints,col=colors, main =title)
 
-#Plot w/ RTL
-breakpoints <- c(0,1,2,3,4)
-colors <- c("blue","green","orange","red")
-scoreCombRTL[scoreCombRTL == 0] <- NA
-title <- paste("Combine Score with RTL Criteria - Res:", resolution)
-plot(scoreCombRTL,breaks=breakpoints,col=colors, main =title)
 
-#Plot only LTL
-scoreLTL[scoreLTL == 0] <- NA
-title <- paste("Score LTL only - Res:", resolution)
-plot(scoreLTL, breaks=breakpoints,col=colors, main=title)
-
-#Plot Comb of all
-score.Comb.RLT.LTL[score.Comb.RLT.LTL == 0] <- NA
-title <- paste("score Combination all - Res:", resolution)
-plot(score.Comb.RLT.LTL, breaks=breakpoints,col=colors,main=title)
 #Write Raster Containin the Score for everything
 filename <- paste("scoreComb", resolution)
 writeRaster(score.Comb.RLT.LTL, filename, format = "GTiff", overwrite=TRUE)
@@ -546,10 +518,14 @@ r.median <- raster(ext=extent, resolution = resolution, crs = crs)
 median.tif <- writeRaster(r.median, filename = "median.tif", format="GTiff", overwrite=TRUE)
 median.raster <- gdal_rasterize(src_datasource, dst_filename = "median.tif", a="med_ref",at=TRUE,output_Raster = TRUE)
 crs(median.raster) <- crs
+#####################################################################################################################
 
-
+#create an empty score layer for Median criteria
 scoreMed <- raster(ext=extent, resolution = resolution, crs = crs)
-scoreMed[] <- npv
+scoreMed[] <- 0
+
+scoreMed.temp <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreMed.temp[] <- 0
 
 #Criterias for Median
 median.true <- median.raster == 1
@@ -560,52 +536,111 @@ sp30 <- maxsp == 30
 sp35 <- maxsp == 35
 sp40 <- maxsp >= 40
 
-tlc3 <- totallanes_ns.raster <= 3
-tlc45 <- totallanes_ns.raster == 4 | totallanes_ns.raster == 5
-tlc6 <- totallanes_ns.raster >= 6
+#stack the total lane ns and ew together
+tl_stack <- stack(totallanes_ns.raster, totallanes_ew.raster)
 
-tlc12 <- totallanes_ns.raster == 1 | totallanes_ns.raster == 2
-tlcGreat4 <- totallanes_ns.raster >= 4
+#for loop for intersection that has median
+for (i in 1:nlayers(tl_stack)) {
+  #plot(tl_stack[[i]])
+  tlc3 <- tl_stack[[i]] <= 3
+  tlc45 <- tl_stack[[i]] == 4 | tl_stack[[i]] == 5
+  tlc6 <- tl_stack[[i]] >= 6
+  
+  scoreMed.temp[median.true & sp25 & tlc3] <- 1
+  scoreMed.temp[median.true & sp25 & tlc45] <- 2
+  scoreMed.temp[median.true & sp25 & tlc6] <- 4
+  
+  scoreMed.temp[median.true & sp30 & tlc3] <- 1
+  scoreMed.temp[median.true & sp30 & tlc45] <- 2
+  scoreMed.temp[median.true & sp30 & tlc6] <- 4
+  
+  scoreMed.temp[median.true & sp35 & tlc3] <- 2
+  scoreMed.temp[median.true & sp35 & tlc45] <- 3
+  scoreMed.temp[median.true & sp35 & tlc6] <- 4
+  
+  scoreMed.temp[median.true & sp40 & tlc3] <- 3
+  scoreMed.temp[median.true & sp40 & tlc45] <- 4
+  scoreMed.temp[median.true & sp40 & tlc6] <- 4
+  
+  scoreMed <- stack(scoreMed, scoreMed.temp)
+  scoreMed <- overlay(scoreMed, fun=max)
+}
 
+plot(scoreMed, main="scoreMed")
 
-#Score for Has Median
-scoreMed[median.true & sp25 & tlc3] <- 1
-scoreMed[median.true & sp25 & tlc45] <- 2
-scoreMed[median.true & sp25 & tlc6] <- 4
+#for loop for intersection that does not has median
+for (i in nlayers(tl_stack)) {
+  tlc12 <- tl_stack[[i]] == 1 | tl_stack[[i]] == 2
+  tlcGreat4 <- tl_stack[[i]] >= 4
+  
+  scoreMed.temp[median.false & sp25 & tlc12] <- 1
+  scoreMed.temp[median.false & sp25 & tlc3] <- 1
+  scoreMed.temp[median.false & sp25 & tlcGreat4] <- 2
+  
+  scoreMed.temp[median.false & sp30 & tlc12] <- 1
+  scoreMed.temp[median.false & sp30 & tlc3] <- 2
+  scoreMed.temp[median.false & sp30 & tlcGreat4] <- 3
+  
+  scoreMed.temp[median.false & sp35 & tlc12] <- 2
+  scoreMed.temp[median.false & sp35 & tlc3] <- 3
+  scoreMed.temp[median.false & sp35 & tlcGreat4] <- 4
+  
+  scoreMed.temp[median.false & sp40 & tlc12] <- 3
+  scoreMed.temp[median.false & sp40 & tlc3] <- 4
+  scoreMed.temp[median.false & sp40 & tlcGreat4] <- 4
+  
+  scoreMed <- stack(scoreMed, scoreMed.temp)
+  scoreMed <- overlay(scoreMed, fun=max)
+}
 
-scoreMed[median.true & sp30 & tlc3] <- 1
-scoreMed[median.true & sp30 & tlc45] <- 2
-scoreMed[median.true & sp30 & tlc6] <- 4
-
-scoreMed[median.true & sp35 & tlc3] <- 2
-scoreMed[median.true & sp35 & tlc45] <- 3
-scoreMed[median.true & sp35 & tlc6] <- 4
-
-scoreMed[median.true & sp40 & tlc3] <- 3
-scoreMed[median.true & sp40 & tlc45] <- 4
-scoreMed[median.true & sp40 & tlc6] <- 4
-
-plot(scoreMed)
-
-#Score for no median
-scoreMed[median.false & sp25 & tlc12] <- 1
-scoreMed[median.false & sp25 & tlc3] <- 1
-scoreMed[median.false & sp25 & tlcGreat4] <- 2
-
-scoreMed[median.false & sp30 & tlc12] <- 1
-scoreMed[median.false & sp30 & tlc3] <- 2
-scoreMed[median.false & sp30 & tlcGreat4] <- 3
-
-scoreMed[median.false & sp35 & tlc12] <- 2
-scoreMed[median.false & sp35 & tlc3] <- 3
-scoreMed[median.false & sp35 & tlcGreat4] <- 4
-
-scoreMed[median.false & sp40 & tlc12] <- 3
-scoreMed[median.false & sp40 & tlc3] <- 4
-scoreMed[median.false & sp40 & tlcGreat4] <- 4
+scoreALL <- stack(score.Comb.RLT.LTL, scoreMed)
+scoreALL <- overlay(scoreALL, fun=max)
 
 
 #####################################################################################################################
+#plotting
+#Plot only biking facilities
+breakpoints <- c(0,1,2,3,4)
+colors <- c("blue","green","orange","red")
+scoreBike[scoreBike == 5] <- NA
+title <- paste("Score with only biking faciliities - Res:", resolution)
+plot(scoreBike,breaks=breakpoints,col=colors, main =title)
+
+#Plot Mix traffic w/o Int
+breakpoints <- c(0,1,2,3,4)
+colors <- c("blue","green","orange","red")
+scoreComb[scoreComb == 0] <- NA
+title <- paste("Combine Score w/o Intersection - Res:", resolution)
+plot(scoreComb,breaks=breakpoints,col=colors, main =title)
+
+#Plot w/ RTL
+breakpoints <- c(0,1,2,3,4)
+colors <- c("blue","green","orange","red")
+scoreCombRTL[scoreCombRTL == 0] <- NA
+title <- paste("Combine Score with RTL Criteria - Res:", resolution)
+plot(scoreCombRTL,breaks=breakpoints,col=colors, main =title)
+
+#Plot only LTL
+scoreLTL[scoreLTL == 0] <- NA
+title <- paste("Score LTL only - Res:", resolution)
+plot(scoreLTL, breaks=breakpoints,col=colors, main=title)
+
+#Plot Comb of all w/o int
+score.Comb.RLT.LTL[score.Comb.RLT.LTL == 0] <- NA
+title <- paste("score Combination all no intersection - Res:", resolution)
+plot(score.Comb.RLT.LTL, breaks=breakpoints,col=colors,main=title)
+
+#Plot Intersection Score
+scoreMed[scoreMed == 0] <- NA
+title <- paste("score Intersection crossing - Res:", resolution)
+plot(scoreMed, breaks=breakpoints,col=colors, main=title)
+
+#Plot ALL
+title <- paste("score ALL - Res: ", resolution)
+plot(scoreALL, breaks=breakpoints,col=colors, main=title)
+#####################################################################################################################
+
+
 
 #Detect Island of activities
 #Score 1 and 2 cluster
