@@ -3,12 +3,15 @@
 #raster files using gdalUtils.  Perform BLTS analysis based on the documentation ODOT report
 #Author: Edmond Lai - CUUATS
 #Last Work on by: Edmond Lai
-#Date Last Worked on: 5/19/2017
+#Date Last Worked on: 5/24/2017
 #Last Worked on: 
-#Finished RTL Criteria
+#Shortest Route Calculation
 
 #Need to complete:
-#Work on the completion median intersection approach
+#Writing comments
+
+
+start.time <- Sys.time()
 
 #LIBRARY NEEDED FOR ANALYSIS
 #####################################################################################################################
@@ -18,50 +21,47 @@ library(gdalUtils)
 library(RColorBrewer)
 library(gdistance)
 
-#USER INPUT
+#USER INPUT (Section A)
 #*************************************************************************************************************************#
-#set path to the file geodatabase containing feature classes for analysis
+#1. set path to the file geodatabase containing feature classes for analysis
 path.fgdb <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
 
-#set working Directory
+#2. set working Directory
 wd <- "L:/Sustainable Neighborhoods Toolkit/scripts/SustainableNeighborhood"
 
 #set wd
 setwd(wd)
 
-#Set resolution for raster cell size, this can be changed by the user to fine tune the scale of cell size
+#3. Set resolution for raster cell size, this can be changed by the user to fine tune the scale of cell size
 resolution <- 100
 
-#set path to the study area geodatabase
+#4. set path to the study area geodatabase
 boundary.fgdb <- "G:/Resources/Data/Boundary.gdb"
 
-#set path where shapefiles are stored
+#5. set path where shapefiles are stored
 shape.path <- "L:/Sustainable Neighborhoods Toolkit/TIFF/"
 
-#set name for the bike shapefile
+#6. set name for the bike shapefile
 bike.name <- "bikeLane.shp"
 
-#set name for total lane shapefile
+#7. set name for total lane shapefile
 totalLane.name <- "TotalLane.shp"
 
-#set name for St CL shapefile
+#8. set name for St CL shapefile
 StreetCL.name <- "StreetCL.shp"
 
-#set path to intersection
+#9. set path to intersection
 Int.name <- "intersection.shp"
 
-#projection system
+#10. projection system
 crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 
-#set no path value (In Progress)
+#11. set no path value (In Progress)
 npv <- 5
 
 #*************************************************************************************************************************#
 
-start.time <- Sys.time()
-
-
-#READING FEATURE CLASS LINE FILES FROM ESRI GEODATABASE
+#READING FEATURE CLASS LINE FILES FROM ESRI GEODATABASE (Section B)
 #####################################################################################################################
 #Read Boundary for the study area
 UA <- readOGR(dsn=boundary.fgdb, layer="UAB2013")
@@ -69,8 +69,9 @@ UA <- readOGR(dsn=boundary.fgdb, layer="UAB2013")
 #Set Extent for Test Area
 extent<-extent(UA)
 
-####CREATE A RASTER LAYER OBJECT (In Progress)####
+####CREATE A RASTER LAYER OBJECT (Section C)####
 #########################################################################################################################
+#Section C1
 #Set path to Bike Lane shapefile
 src_datasource <- paste(shape.path,bike.name, sep = "")
 
@@ -104,12 +105,10 @@ bikeCrit.tif <- writeRaster(r.bikeCrit, filename = "bikeCrit.tif", format="GTiff
 bikeCrit.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikeCrit.tif", a="hasParki_1",at=TRUE,output_Raster = TRUE)
 crs(bikeCrit.raster) <- crs
 
-#########################################################################################################################
-###Create a total lane raster###
 
+###Create a total lane raster###
 #Set Path to Total Lane Shapefile
 src_datasource <- paste(shape.path,totalLane.name, sep = "")
-
 #Rasterize Total Lane
 r.lanePerDir <- raster(ext=extent, resolution = resolution, crs = crs)
 lanePerdir.tif <- writeRaster(r.lanePerDir, filename = "lanePerdir.tif", format="GTiff", overwrite=TRUE)
@@ -117,7 +116,6 @@ lanePerDir.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filenam
 crs(lanePerDir.raster) <- crs
 
 
-#########################################################################################################################
 #StreetCL layer
 #Set path to Street CL shapefile
 src_datasource <- paste(shape.path,StreetCL.name, sep = "")
@@ -126,17 +124,14 @@ speed.tif <- writeRaster(r.speed, filename = "speed.tif", format="GTiff", overwr
 speed.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "speed.tif", a="SPEED",at=TRUE,output_Raster = TRUE)
 crs(speed.raster) <- crs
 
-#FUNCTIONS TO BE USED IN THE BLTS SCORE ANALYSIS (In Progress)
+#FUNCTIONS TO BE USED IN THE BLTS SCORE ANALYSIS
 #####################################################################################################################
 #Assign score of Off Street Biking to a score of 1
 
+#Section C2
 #Physically Seperated Bike Lane 
 #Input is in BikePed Layer, all the off street facilities are assigned a score of 1, all other type of biking facilities
 #are removed from this layer.  Result is the all off road biking facilities and a GeoTiff is exported for later analysis.
-
-#scoreOffStreet <- raster(ext=extent, resolution = resolution, crs = crs)
-#scoreOffStreet[] <- npv
-
 scoreBike <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreBike[] <- npv
 
@@ -151,13 +146,10 @@ scoreBike[osft1 | osft2 | osft3 | osft4 | osft5 | osft10] <- 1
 
 
 #####################################################################################################################
-####Create new layer for each criteria#
-
-
+####Create new layer for each criteria (Section C3)#
 #Bike Criteria (Does the bike lane has adj parking? 1 - yes, 0 - no)
 ly <- bikeCrit.raster == 1
 ln <- bikeCrit.raster == 0 
-
 
 #Lane per direction (for Biking facilities)
 lpd1 <- lanePerDir.raster == 1 | lanePerDir.raster == 0
@@ -189,18 +181,14 @@ lane1 <- lanePerDir.raster == 1
 lane2 <- lanePerDir.raster == 2
 lane3 <- lanePerDir.raster >= 3
 
-#No bike Lane but has sharrow
-sharrow <- facility.raster == 8
-sharrow[sharrow != 1] <- 0
-sharrow[is.na(sharrow)] <- 0
-sharrow[sharrow == 1] <- -1
+
 
 
 #####################################################################################################################
-###Exhibit 14-3 Bike Lane with Adjaent Parking Lane Criteria
+###Exhibit 14-3 Bike Lane with Adjaent Parking Lane Criteria (Section C4)
 #Create a Score Layer
 #Create all bike facilities
-allBike <- is.na(facility.raster) == FALSE
+#allBike <- is.na(facility.raster) == FALSE
 
 #Bike Lane with Adjacent Parking Lane Criteria
 #Bike Path Type
@@ -256,10 +244,7 @@ scoreBike[bikelane & ln & lpd2 & sp35 & bwless7] <- 3
 scoreBike[bikelane & ln & lpd2 & sp40 & bwless7] <- 4
 
 #####################################################################################################################
-### Exhibit 14-5 Urban/Suburban Mixed used with Biking Facilities
-
-#####################################################################################################################
-### Exhibit 14-5 Urban/Suburban Mixed Traffic Criteria
+### Exhibit 14-5 Urban/Suburban Mixed Traffic Criteria (Section C5)
 scoreMix <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreMix[] <- npv
 
@@ -280,13 +265,19 @@ scoreMix[sp30 & lane3] <- 4
 scoreMix[spgreat35 & lane3] <- 4
 
 
-#Lower the BLTS score by one if sharrow is present
+#Lower the BLTS score by one if sharrow is present (Section C6)
+
+#No bike Lane but has sharrow
+sharrow <- facility.raster == 8
+sharrow[sharrow != 1] <- 0
+sharrow[is.na(sharrow)] <- 0
+sharrow[sharrow == 1] <- -1
+
 scoreMix <- scoreMix + sharrow
 scoreMix[scoreMix == 0] <- 1
 
 #####################################################################################################################
-
-##Calculate Combine Score for bike facilities and mix used traffic
+##Calculate Combine Score for bike facilities and mix used traffic (Section C7)
 scoreComb <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreComb[] <- npv
 stk <- stack(scoreMix,scoreBike)
@@ -298,11 +289,10 @@ writeRaster(scoreComb, filename, format = "GTiff", overwrite=TRUE)
 
 
 #####################################################################################################################
-#####INTERSECTION APPROACH #####
+####Right Turn Lane Criteria (Section D)####
 #Rasterizing Attributes needed for the Intersection Approach
 
-#Rasterize Right Turn Lane Config
-#####################################################################################################################
+#Rasterize Right Turn Lane Configuration (Section D1)
 src_datasource <- paste(shape.path,StreetCL.name, sep = "")
 r.RTL_Conf_N <- raster(ext=extent, resolution = resolution, crs = crs)
 RTL_Conf_N.tif <- writeRaster(r.RTL_Conf_N, filename = "RTL_Conf_N", format="GTiff", overwrite=TRUE)
@@ -340,7 +330,6 @@ crs(RTL_Length.raster) <- crs
 
 
 #####################################################################################################################
-#Right Turn Lane Criteria Exhibit 14-7 
 #Create empty raster to store the score
 scoreRTL <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreRTL[] <- 0
@@ -348,16 +337,18 @@ scoreRTL[] <- 0
 scoreRTL.temp <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreRTL.temp[] <- 0
 #####################################################################################################################
-#create T/F layer for the Right-turn lane configuration
+#create mask layer for RTL length (Section D2)
 RTL_Length_less150 <-  RTL_Length.raster <= 150 & RTL_Length.raster > 0
 RTL_Length_great150 <- RTL_Length.raster > 150
 RTL_Length_any <- RTL_Length.raster > 0
+
+#create layer for the Right-turn lane approach configuration
 RTL_Appro_Str <- BL_Appr_Al.raster == 1
 RTL_Appro_Lef <- BL_Appr_Al.raster == 2 | BL_Appr_Al.raster == 3
 RTL_Appro_Any <- BL_Appr_Al.raster == 1 | BL_Appr_Al.raster == 2 | BL_Appr_Al.raster == 3 | BL_Appr_Al.raster == 0
 
-#Loop through the RTL Configuration for N, S, E, W and assign score for each direction of the intersection
-#Combine the 
+#Loop through the RTL Configuration for N, S, E, W and assign score for each direction of the intersection (Section D3)
+#Combine the layers into rasterStack
 int_Dir <- stack(RTL_Conf_N.raster, RTL_Conf_S.raster,RTL_Conf_E.raster,RTL_Conf_W.raster)
 names(int_Dir) <- c("North", "South", "East", "West")
 
@@ -374,11 +365,11 @@ for (i in 1:nlayers(int_Dir)) {
 }
 
 #Overlay the Score w/o intersection and with RTL criteria, assign null value to zero and select the maximum from the two
-scoreComb_5 <- scoreComb ==5
-scoreRTL_5 <- scoreRTL == 5
+#scoreComb_5 <- scoreComb == 5
+#scoreRTL_5 <- scoreRTL == 5
 
-scoreComb[scoreComb_5] <- 0
-scoreRTL[scoreRTL_5] <- 0
+scoreComb[scoreComb == 5] <- 0
+scoreRTL[scoreRTL== 5] <- 0
 Comb_RTL <- stack(scoreComb, scoreRTL)
 scoreCombRTL <- overlay(Comb_RTL, fun = max)
 
@@ -392,9 +383,8 @@ filename <- paste("scoreCombRTL", resolution)
 writeRaster(scoreCombRTL, filename, format = "GTiff", overwrite=TRUE)
 
 #####################################################################################################################
-#Left Turn Lane Criteria
-
-#rasterize Criteria for Left Turn Lane
+#Left Turn Lane Criteria (Section E)
+#rasterize Criteria for Left Turn Lane (Section E1)
 #Lane Cross
 src_datasource <- paste(shape.path,StreetCL.name, sep = "")
 r.LTL_lanesc <- raster(ext=extent, resolution = resolution, crs = crs)
@@ -438,45 +428,45 @@ LTL_Conf_W.tif <- writeRaster(r.LTL_Conf_W, filename = "LTL_Conf_W", format="GTi
 LTL_Conf_W.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_Conf_W.tif", a="LTL_Conf_W",at=TRUE,output_Raster = TRUE)
 crs(LTL_Conf_W.raster) <- crs
 #####################################################################################################################
-#Create Stack for LTL Criteria
-#LTL_Conf_Dir <- stack(LTL_Conf_N.raster, LTL_Conf_S.raster,LTL_Conf_E.raster,LTL_Conf_W.raster)
-LTL_LC_Dir <- stack(LTL_lanesc.raster, LTL_lane_1.raster, LTL_lane_2.raster, LTL_lane_3.raster)
-
-#Create empty raster to store the score for LTL
+#Create empty raster to store the score for LTL (Section E2)
 scoreLTL <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreLTL[] <- 0
 
 scoreLTL.temp <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreLTL.temp[] <- 0
 
-#creating criteria
+#Create Stack for LTL Criteria
+LTL_Conf_Dir <- stack(LTL_Conf_N.raster, LTL_Conf_S.raster,LTL_Conf_E.raster,LTL_Conf_W.raster)
+LTL_LC_Dir <- stack(LTL_lanesc.raster, LTL_lane_1.raster, LTL_lane_2.raster, LTL_lane_3.raster)
 
-#Create evaluation layer for lane crossed in one intersection
-for(i in 1:nlayers(LTL_LC_Dir)) {
-  #Setting criteria for evaluation
-  laneCrossed_0 <- LTL_LC_Dir[[i]] == 0
-  laneCrossed_1 <- LTL_LC_Dir[[i]] == 1
-  laneCrossed_2 <- LTL_LC_Dir[[i]] >= 2
-  laneCrossed_DE <- LTL_LC_Dir[[i]] != 0
-
-  #Scoring based on Exhibit 14-8 Left Turn Lane Criteria
-  scoreLTL.temp[sp25 & laneCrossed_0] <- 2
-  scoreLTL.temp[sp25 & laneCrossed_1] <- 2
-  scoreLTL.temp[sp25 & laneCrossed_2] <- 3
-  scoreLTL.temp[sp25 & laneCrossed_DE] <- 4
+for (i in 1:nlayers(LTL_Conf_Dir)) {
+  #Create evaluation layer for lane crossed in one intersection
+  for(i in 1:nlayers(LTL_LC_Dir)) {
+    #Setting criteria for evaluation
+    laneCrossed_0 <- LTL_LC_Dir[[i]] == 0
+    laneCrossed_1 <- LTL_LC_Dir[[i]] == 1
+    laneCrossed_2 <- LTL_LC_Dir[[i]] >= 2
+    laneCrossed_DE <- LTL_Conf_Dir[[i]] != 0
   
-  scoreLTL.temp[sp30 & laneCrossed_0] <- 2
-  scoreLTL.temp[sp30 & laneCrossed_1] <- 3
-  scoreLTL.temp[sp30 & laneCrossed_2] <- 4
-  scoreLTL.temp[sp30 & laneCrossed_DE] <- 4
-  
-  scoreLTL.temp[spgreat35 & laneCrossed_0] <- 3
-  scoreLTL.temp[spgreat35 & laneCrossed_1] <- 4
-  scoreLTL.temp[spgreat35 & laneCrossed_2] <- 4
-  scoreLTL.temp[spgreat35 & laneCrossed_DE] <- 4
-  
-  scoreLTL <- stack(scoreLTL, scoreLTL.temp)
-  scoreLTL <- overlay(scoreLTL, fun=max)
+    #Scoring based on Exhibit 14-8 Left Turn Lane Criteria
+    scoreLTL.temp[sp25 & laneCrossed_0] <- 2
+    scoreLTL.temp[sp25 & laneCrossed_1] <- 2
+    scoreLTL.temp[sp25 & laneCrossed_2] <- 3
+    scoreLTL.temp[sp25 & laneCrossed_DE] <- 4
+    
+    scoreLTL.temp[sp30 & laneCrossed_0] <- 2
+    scoreLTL.temp[sp30 & laneCrossed_1] <- 3
+    scoreLTL.temp[sp30 & laneCrossed_2] <- 4
+    scoreLTL.temp[sp30 & laneCrossed_DE] <- 4
+    
+    scoreLTL.temp[spgreat35 & laneCrossed_0] <- 3
+    scoreLTL.temp[spgreat35 & laneCrossed_1] <- 4
+    scoreLTL.temp[spgreat35 & laneCrossed_2] <- 4
+    scoreLTL.temp[spgreat35 & laneCrossed_DE] <- 4
+    
+    scoreLTL <- stack(scoreLTL, scoreLTL.temp)
+    scoreLTL <- overlay(scoreLTL, fun=max)
+  }
 }
 #####################################################################################################################
 #Write Raster containing only LTL score
