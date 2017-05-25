@@ -273,8 +273,11 @@ sharrow[sharrow != 1] <- 0
 sharrow[is.na(sharrow)] <- 0
 sharrow[sharrow == 1] <- -1
 
+
+
 scoreMix <- scoreMix + sharrow
 scoreMix[scoreMix == 0] <- 1
+
 
 #####################################################################################################################
 ##Calculate Combine Score for bike facilities and mix used traffic (Section C7)
@@ -374,9 +377,7 @@ Comb_RTL <- stack(scoreComb, scoreRTL)
 scoreCombRTL <- overlay(Comb_RTL, fun = max)
 
 #Plot scores for Comb and with RTL criteria
-#plot(scoreCombRTL, main="Score with RTL")
-#scoreCombRTL[scoreCombRTL == 0] <- NA
-
+plot(scoreRTL)
 
 ###Export score as a GeoTiff
 filename <- paste("scoreCombRTL", resolution)
@@ -566,7 +567,6 @@ for (i in 1:nlayers(tl_stack)) {
   scoreMed <- overlay(scoreMed, fun=max)
 }
 
-plot(scoreMed, main="scoreMed")
 #####################################################################################################################
 #for loop for intersection that does not has median (Section F4)
 for (i in nlayers(tl_stack)) {
@@ -603,20 +603,35 @@ writeRaster(scoreALL, filename, format = "GTiff", overwrite=TRUE)
 #####################################################################################################################
 #plotting (Section G)
 #Plot only biking facilities
+pdf("BLTS Score.pdf")
 breakpoints <- c(0,1,2,3,4)
 colors <- c("blue","green","orange","red")
 scoreBike[scoreBike == 5] <- NA
 title <- paste("Score with only biking faciliities - Res:", resolution)
 plot(scoreBike,breaks=breakpoints,col=colors, main =title)
 
-#Plot Mix traffic w/o Int
+#Plot Mix traffic only
+breakpoints <- c(0,1,2,3,4)
+colors <- c("blue","green","orange","red")
+scoreMix[scoreMix == 5] <- NA
+title <- paste("Score with Mix Traffic Only - Res:", resolution)
+plot(scoreMix,breaks=breakpoints,col=colors, main =title)
+#Sharrow Present
+plot(sharrow, main="Sharrow Present", col=c("green","white"))
+
+#Plot Mix traffic + Bike w/o Int
 breakpoints <- c(0,1,2,3,4)
 colors <- c("blue","green","orange","red")
 scoreComb[scoreComb == 0] <- NA
-title <- paste("Combine Score w/o Intersection - Res:", resolution)
+title <- paste("Mixed Traffic + Bicycle Facility w/o Intersection - Res:", resolution)
 plot(scoreComb,breaks=breakpoints,col=colors, main =title)
 
-#Plot w/ RTL
+#Plot RTL Only
+title <- paste("RTL Only - Res:", resolution)
+scoreRTL[scoreRTL == 0] <- NA
+plot(scoreRTL,breaks=breakpoints,col=colors, main =title)
+
+#Plot w/ RTL with Mix Traffic and Bike
 breakpoints <- c(0,1,2,3,4)
 colors <- c("blue","green","orange","red")
 scoreCombRTL[scoreCombRTL == 0] <- NA
@@ -630,18 +645,19 @@ plot(scoreLTL, breaks=breakpoints,col=colors, main=title)
 
 #Plot Comb of all w/o int
 score.Comb.RLT.LTL[score.Comb.RLT.LTL == 0] <- NA
-title <- paste("score Combination all no intersection - Res:", resolution)
+title <- paste("Score with RTL and LTL Criteria - Res:", resolution)
 plot(score.Comb.RLT.LTL, breaks=breakpoints,col=colors,main=title)
 
 #Plot Intersection Score
 scoreMed[scoreMed == 0] <- NA
-title <- paste("score Intersection crossing - Res:", resolution)
+title <- paste("Score w/ un-signalized intersection crossing - Res:", resolution)
 plot(scoreMed, breaks=breakpoints,col=colors, main=title)
 
 #Plot ALL
 scoreALL[scoreALL == 0] <- NA
 title <- paste("score ALL - Res: ", resolution)
 plot(scoreALL, breaks=breakpoints,col=colors, main=title)
+dev.off()
 #####################################################################################################################
 
 #Detect Island of activities
@@ -664,7 +680,7 @@ plot(scoretest)
 tr1C <- geoCorrection(tr1)
 #commuteDistance(tr1C, testpoint)
 
-C <- c(1000000,1202000)
+C <- c(1000000,1260000)
 U <- c(1030000,1250000)
 CtoU <- shortestPath(tr1C, C, U, output="SpatialLines")
 crs(CtoU) <- crs
