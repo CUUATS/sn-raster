@@ -517,7 +517,7 @@ crs(signal.raster) <- crs
 
 #####################################################################################################################
 
-#create an empty score layer for Median criteria
+#create an empty score layer for Median criteria (Section F3)
 scoreMed <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreMed[] <- 0
 
@@ -542,7 +542,6 @@ tl_stack <- stack(totallanes_ns.raster, totallanes_ew.raster)
 
 #for loop for intersection that has median
 for (i in 1:nlayers(tl_stack)) {
-  #plot(tl_stack[[i]])
   tlc3 <- tl_stack[[i]] <= 3
   tlc45 <- tl_stack[[i]] == 4 | tl_stack[[i]] == 5
   tlc6 <- tl_stack[[i]] >= 6
@@ -568,8 +567,8 @@ for (i in 1:nlayers(tl_stack)) {
 }
 
 plot(scoreMed, main="scoreMed")
-
-#for loop for intersection that does not has median
+#####################################################################################################################
+#for loop for intersection that does not has median (Section F4)
 for (i in nlayers(tl_stack)) {
   tlc12 <- tl_stack[[i]] == 1 | tl_stack[[i]] == 2
   tlcGreat4 <- tl_stack[[i]] >= 4
@@ -602,7 +601,7 @@ writeRaster(scoreALL, filename, format = "GTiff", overwrite=TRUE)
 
 
 #####################################################################################################################
-#plotting
+#plotting (Section G)
 #Plot only biking facilities
 breakpoints <- c(0,1,2,3,4)
 colors <- c("blue","green","orange","red")
@@ -665,8 +664,8 @@ plot(scoretest)
 tr1C <- geoCorrection(tr1)
 #commuteDistance(tr1C, testpoint)
 
-C <- c(1000000,1240000)
-U <- c(1030000,1260000)
+C <- c(1000000,1202000)
+U <- c(1030000,1250000)
 CtoU <- shortestPath(tr1C, C, U, output="SpatialLines")
 crs(CtoU) <- crs
 plot(CtoU, add=TRUE)
