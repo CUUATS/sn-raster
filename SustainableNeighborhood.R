@@ -604,59 +604,66 @@ writeRaster(scoreALL, filename, format = "GTiff", overwrite=TRUE)
 #plotting (Section G)
 #Plot only biking facilities
 pdf("BLTS Score.pdf")
+scorePlot <- raster(ext=extent, resolution = resolution, crs = crs)
+scorePlot[] <- 0
+
 breakpoints <- c(0,1,2,3,4)
 colors <- c("blue","green","orange","red")
-scoreBike[scoreBike == 5] <- NA
+scorePlot <- scoreBike
+scorePlot[scorePlot== 5 | scorePlot == 0] <- NA
 title <- paste("Score with only biking faciliities - Res:", resolution)
-plot(scoreBike,breaks=breakpoints,col=colors, main =title)
+plot(scorePlot,breaks=breakpoints,col=colors, main =title)
 
 #Plot Mix traffic only
-breakpoints <- c(0,1,2,3,4)
-colors <- c("blue","green","orange","red")
-scoreMix[scoreMix == 5] <- NA
+scorePlot <- scoreMix
+scorePlot[scorePlot== 5 | scorePlot == 0] <- NA
 title <- paste("Score with Mix Traffic Only - Res:", resolution)
-plot(scoreMix,breaks=breakpoints,col=colors, main =title)
+plot(scorePlot,breaks=breakpoints,col=colors, main =title)
+
 #Sharrow Present
 plot(sharrow, main="Sharrow Present", col=c("green","white"))
 
 #Plot Mix traffic + Bike w/o Int
-breakpoints <- c(0,1,2,3,4)
-colors <- c("blue","green","orange","red")
-scoreComb[scoreComb == 0] <- NA
+scorePlot <- scoreComb
+scorePlot[scorePlot== 5 | scorePlot == 0] <- NA
 title <- paste("Mixed Traffic + Bicycle Facility w/o Intersection - Res:", resolution)
-plot(scoreComb,breaks=breakpoints,col=colors, main =title)
+plot(scorePlot,breaks=breakpoints,col=colors, main =title)
 
 #Plot RTL Only
 title <- paste("RTL Only - Res:", resolution)
-scoreRTL[scoreRTL == 0] <- NA
-plot(scoreRTL,breaks=breakpoints,col=colors, main =title)
+scorePlot <- scoreRTL
+scorePlot[scorePlot== 5 | scorePlot == 0] <- NA
+plot(scorePlot, breaks=breakpoints,col=colors, main =title)
 
 #Plot w/ RTL with Mix Traffic and Bike
-breakpoints <- c(0,1,2,3,4)
-colors <- c("blue","green","orange","red")
-scoreCombRTL[scoreCombRTL == 0] <- NA
+scorePlot <- scoreCombRTL
+scorePlot[scorePlot== 5 | scorePlot == 0] <- NA
 title <- paste("Combine Score with RTL Criteria - Res:", resolution)
-plot(scoreCombRTL,breaks=breakpoints,col=colors, main =title)
+plot(scorePlot,breaks=breakpoints,col=colors, main =title)
 
 #Plot only LTL
-scoreLTL[scoreLTL == 0] <- NA
+scorePlot <- scoreLTL
+scorePlot[scorePlot== 5 | scorePlot == 0] <- NA
 title <- paste("Score LTL only - Res:", resolution)
-plot(scoreLTL, breaks=breakpoints,col=colors, main=title)
+plot(scorePlot, breaks=breakpoints,col=colors, main=title)
 
 #Plot Comb of all w/o int
-score.Comb.RLT.LTL[score.Comb.RLT.LTL == 0] <- NA
+scorePlot <- score.Comb.RLT.LTL
+scorePlot[scorePlot== 5 | scorePlot == 0] <- NA
 title <- paste("Score with RTL and LTL Criteria - Res:", resolution)
-plot(score.Comb.RLT.LTL, breaks=breakpoints,col=colors,main=title)
+plot(scorePlot, breaks=breakpoints,col=colors,main=title)
 
 #Plot Intersection Score
-scoreMed[scoreMed == 0] <- NA
+scorePlot <- scoreMed
+scorePlot[scorePlot== 5 | scorePlot == 0] <- NA
 title <- paste("Score w/ un-signalized intersection crossing - Res:", resolution)
-plot(scoreMed, breaks=breakpoints,col=colors, main=title)
+plot(scorePlot, breaks=breakpoints,col=colors, main=title)
 
 #Plot ALL
-scoreALL[scoreALL == 0] <- NA
+scorePlot <- scoreALL
+scorePlot[scorePlot== 5 | scorePlot == 0] <- NA
 title <- paste("score ALL - Res: ", resolution)
-plot(scoreALL, breaks=breakpoints,col=colors, main=title)
+plot(scorePlot, breaks=breakpoints,col=colors, main=title)
 dev.off()
 #####################################################################################################################
 
@@ -674,7 +681,7 @@ plot(c.score12, main = "Island of score of 1 and 2")
 #create transition class from score layer
 
 scoretest <- scoreALL
-scoretest[is.na(scoretest)] <- 9999
+scoretest[scoretest==0] <- 10
 tr1 <- transition(scoretest, function(x) 1/mean(x), direction=4)
 plot(scoretest)
 tr1C <- geoCorrection(tr1)
@@ -690,6 +697,15 @@ df <- data.frame(id = c(1,2))
 CtoU <- SpatialLinesDataFrame(CtoU, df)
 dir.create(tempdir)
 writeOGR(CtoU, dsn="tempdir", layer="CtoU", driver="ESRI Shapefile", overwrite_layer = TRUE)
+
+A <- accCost(tr1C, C)
+plot(A)
+plot(A, breaks = seq(0,100000,25000), col = colors)
+B <- accCost(tr1C, U)
+plot(B)
+
+AB <- overlay(A,B, fun=min)
+plot(AB)
 #####################################################################################################################
 end.time <- Sys.time()
 time.taken <- end.time - start.time
