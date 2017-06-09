@@ -1,3 +1,7 @@
+#cleanUpSatelliteImage.R
+#This script takes the LandSat 8 images, reproject and crop for study area, write out TIF file for other analysis
+#by Edmond Lai - CUUATS Sustainable Neighborhood Project
+
 library(raster)
 library(rgdal)
 library(rgeos)
@@ -6,7 +10,7 @@ library(sp)
 setwd("L:/Sustainable Neighborhoods Toolkit/satelliteImage")
 
 #Set resolution
-resolution = 100
+resolution = c(100,100)
 
 
 #Set path to the study area geodatabase
@@ -18,15 +22,12 @@ UA.r <- rasterize(UA, UA.r)
 #Set Extent for Test Area
 extent<-extent(UA)
 
-
-
 crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 
 #reproject and crop
 b2 <- raster("LC08_L1TP_023032_20170510_20170516_01_T1_B2.TIF")
 b2proj <- projectRaster(b2, crs = crs, res = resolution)
 b2proj.crop <- crop(b2proj, extent(UA))
-res(b2proj.crop)
 
 b3 <- raster("LC08_L1TP_023032_20170510_20170516_01_T1_B3.TIF", ext = extent)
 b3proj <- projectRaster(b3, crs = crs, res = resolution)
@@ -35,7 +36,6 @@ b3proj.crop <- crop(b3proj, extent(UA))
 b5 <- raster("LC08_L1TP_023032_20170510_20170516_01_T1_B5.TIF", ext = extent)
 b5proj <- projectRaster(b5, crs = crs, res = resolution)
 b5proj.crop <- crop(b5proj, extent(UA))
-
 
 b4 <- raster("LC08_L1TP_023032_20170510_20170516_01_T1_B4.TIF", ext = extent)
 b4proj <- projectRaster(b4, crs = crs, res = resolution)
@@ -57,8 +57,8 @@ plot(b4proj.crop, main = "B4")
 plot(b5proj.crop, main = "B5")
 
 #plot RGB
-stk <- stack(b4,b3,b2)
-plotRGB(stk, r=1, g=2, b=3, stretch='hist')
+#stk <- stack(b4,b3,b2)
+#plotRGB(stk, r=1, g=2, b=3, stretch='hist')
 
 #write raster
 writeRaster(b2proj.crop, "B2projCrop.tif",format = "GTiff", overwrite=TRUE)

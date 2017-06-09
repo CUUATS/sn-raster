@@ -1,4 +1,7 @@
-#surface temperature
+#surfaceTemp.R
+#This script uses satellite images and calculates the surface temperature for the study area
+#by Edmond Lai - CUUATS Sustainable Neighborhood Project
+
 library(raster)
 library(rgdal)
 library(rgeos)
