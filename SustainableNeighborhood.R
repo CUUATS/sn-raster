@@ -544,7 +544,7 @@ crs(totallanes_ew.raster) <- crs
 #rasterize median (Y/N)
 r.median <- raster(ext=extent, resolution = resolution, crs = crs)
 median.tif <- writeRaster(r.median, filename = "median.tif", format="GTiff", overwrite=TRUE)
-median.raster <- gdal_rasterize(src_datasource, dst_filename = "median.tif", a="med_ref",at=TRUE,output_Raster = TRUE)
+median.raster <- gdal_rasterize(src_datasource, dst_filename = "median.tif", a="med_ref_all",at=TRUE,output_Raster = TRUE)
 crs(median.raster) <- crs
 
 #raster signalized intersection (Y/N)
