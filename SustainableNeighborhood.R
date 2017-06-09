@@ -106,15 +106,13 @@ bikeCrit.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename 
 crs(bikeCrit.raster) <- crs
 
 
-###Create a total lane raster###
-
-
 #StreetCL layer
 Street <- readOGR(dsn=path.fgdb, layer = "Street_w_Int_Clip")
 maxsp.raster <- raster(ext=extent, resolution = resolution, crs = crs)
 maxsp.raster <- rasterize(Street, maxsp.raster, field="SPEED", fun='max')
 crs(maxsp.raster) <- crs
 
+#Create total Lane Raster
 lanePerDir.raster <- raster(ext=extent, resolution = resolution, crs = crs)
 lanePerDir.raster <- rasterize(Street, lanePerDir.raster, field="lpd", fun='max')
 crs(lanePerDir.raster) <- crs
@@ -136,9 +134,8 @@ osft2 <- facility.raster == 2
 osft3 <- facility.raster == 3
 osft4 <- facility.raster == 4
 osft5 <- facility.raster == 5
-osft10 <- facility.raster == 10
 
-scoreBike[osft1 | osft2 | osft3 | osft4 | osft5 | osft10] <- 1
+scoreBike[osft1 | osft2 | osft3 | osft4 | osft5] <- 1
 
 
 #####################################################################################################################
@@ -521,6 +518,9 @@ score.Comb.RLT.LTL <- raster(ext=extent, resolution = resolution, crs = crs)
 score.Comb.RLT.LTL[] <- 0
 score.Comb.RLT.LTL <- stack(scoreComb, scoreLTL)
 score.Comb.RLT.LTL <- overlay(score.Comb.RLT.LTL, fun = max)
+
+#Write the hard value of off road bike route to the score
+score.Comb.RLT.LTL[osft1 | osft2 | osft3 | osft4 | osft5] <- 1
 #####################################################################################################################
 
 #Write Raster Containin the Score for everything

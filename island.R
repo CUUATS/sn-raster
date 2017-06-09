@@ -16,7 +16,6 @@ score <- raster("scoreALL 100.TIF")
 #Detect Island of activities
 #Score 1 and 2 cluster
 score[score == 3 | score == 4] <- NA
-plot(score12)
-c.score12 <- clump(score12, directions = 4)
+c.score12 <- clump(score, directions = 4)
 plot(c.score12, main = "Island of score of 1 and 2")
 writeRaster(c.score12, "score12.tif",overwrite=TRUE)

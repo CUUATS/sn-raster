@@ -14,7 +14,7 @@ setwd("L:/Sustainable Neighborhoods Toolkit/scripts/SustainableNeighborhood")
 score <- raster("scoreALL 100.TIF")
 
 score <- score * 2
-score[score==0] <- 10
+score[score==0] <- 20
 
 tr1 <- transition(scoretest, function(x) 1/mean(x), direction=4)
 tr1C <- geoCorrection(tr1)
