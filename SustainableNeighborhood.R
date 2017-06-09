@@ -107,12 +107,6 @@ crs(bikeCrit.raster) <- crs
 
 
 ###Create a total lane raster###
-#Rasterize Total Lane
-#src_datasource <- paste(shape.path,StreetCL.name, sep = "")
-#r.lanePerDir <- raster(ext=extent, resolution = resolution, crs = crs)
-#lanePerdir.tif <- writeRaster(r.lanePerDir, filename = "lanePerdir.tif", format="GTiff", overwrite=TRUE)
-#lanePerDir.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "lanePerdir.tif", a="lpd",at=TRUE,output_Raster = TRUE)
-#crs(lanePerDir.raster) <- crs
 
 
 #StreetCL layer

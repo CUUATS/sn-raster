@@ -4,6 +4,11 @@
 
 library(raster)
 library(gdistance)
+library(rgdal)
+
+path.fgdb <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
+layerName <- "BikeIntersections"
+
 
 setwd("L:/Sustainable Neighborhoods Toolkit/scripts/SustainableNeighborhood")
 score <- raster("scoreALL 100.TIF")
@@ -14,11 +19,8 @@ score[score==0] <- 10
 tr1 <- transition(scoretest, function(x) 1/mean(x), direction=4)
 tr1C <- geoCorrection(tr1)
 
-C <- c(1000000,1260000)
-U <- c(1030000,1250000)
+int <- readOGR(dsn=path.fgdb, layer=layerName)
 
-A <- accCost(tr1C, C)
-B <- accCost(tr1C, U)
-AB <- overlay(A,B, fun=min)
+int_cost <- accCost(tr1C, int)
 
-writeRaster(AB, "AB.tif", format="GTiff", overwrite=TRUE)
+writeRaster(int_cost, "int.tif", format="GTiff", overwrite=TRUE)
