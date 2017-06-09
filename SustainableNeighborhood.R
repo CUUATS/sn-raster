@@ -117,12 +117,11 @@ crs(lanePerDir.raster) <- crs
 
 
 #StreetCL layer
-#Set path to Street CL shapefile
-src_datasource <- paste(shape.path,StreetCL.name, sep = "")
-r.speed <- raster(ext=extent, resolution = resolution, crs = crs)
-speed.tif <- writeRaster(r.speed, filename = "speed.tif", format="GTiff", overwrite=TRUE)
-speed.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "speed.tif", a="SPEED",at=TRUE,output_Raster = TRUE)
-crs(speed.raster) <- crs
+Street <- readOGR(dsn=path.fgdb, layer = "Street_w_Int_Clip")
+maxsp.raster <- raster(ext=extent, resolution = resolution, crs = crs)
+maxsp.raster <- rasterize(Street, maxsp.raster, field="SPEED", fun='max')
+crs(maxsp.raster) <- crs
+
 
 #FUNCTIONS TO BE USED IN THE BLTS SCORE ANALYSIS
 #####################################################################################################################
@@ -156,12 +155,12 @@ lpd1 <- lanePerDir.raster == 1 | lanePerDir.raster == 0
 lpd2 <- lanePerDir.raster >= 2
 
 #Prevailing Speed or Posted Speed
-sp25 <- speed.raster <=25
-sp30 <- speed.raster ==30
-sp35 <- speed.raster ==35
-sp40 <- speed.raster >=40
-spless30 <- speed.raster <= 30
-spgreat35 <- speed.raster >= 35
+sp25 <- maxsp.raster <=25
+sp30 <- maxsp.raster ==30
+sp35 <- maxsp.raster ==35
+sp40 <- maxsp.raster >=40
+spless30 <- maxsp.raster <= 30
+spgreat35 <- maxsp.raster >= 35
 
 #Lane plus parking width
 bpw15 <- bikeParkWidth.raster >= 15
@@ -365,6 +364,7 @@ for (i in 1:nlayers(int_Dir)) {
   scoreRTL.temp[RTL_Conf_S & RTL_Length_less150 & RTL_Appro_Str] <- 2
   scoreRTL <- stack(scoreRTL, scoreRTL.temp)
   scoreRTL <- overlay(scoreRTL, fun=max)
+  plot(scoreRTL, main=title)
 }
 
 #Overlay the Score w/o intersection and with RTL criteria, assign null value to zero and select the maximum from the two
