@@ -2,21 +2,21 @@
 #This script detect island of score of 1 and 2
 #by Edmond Lai - CUUATS Sustainable Neigborhood
 
+library(raster)
+library(rgdal)
+library(rgeos)
+library(sp)
 
 #Set the path to the Score TIF file 
-wd <- "L:\Sustainable Neighborhoods Toolkit\scripts\SustainableNeighborhood\"
 
-setwd(wd)
+setwd("L:/Sustainable Neighborhoods Toolkit/scripts/SustainableNeighborhood")
 
-score <-sfsfs
+score <- raster("scoreALL 100.TIF")
 
 #Detect Island of activities
 #Score 1 and 2 cluster
-
-
-score12 <- score.Comb.RLT.LTL
-score12[score12 == 3 | score12 == 4] <- NA
+score[score == 3 | score == 4] <- NA
 plot(score12)
-c.score12 <- clump(score12, directions = 8)
+c.score12 <- clump(score12, directions = 4)
 plot(c.score12, main = "Island of score of 1 and 2")
 writeRaster(c.score12, "score12.tif",overwrite=TRUE)

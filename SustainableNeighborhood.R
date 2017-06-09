@@ -48,7 +48,7 @@ bike.name <- "bikeLane.shp"
 totalLane.name <- "TotalLane.shp"
 
 #8. set name for St CL shapefile
-StreetCL.name <- "StreetCL.shp"
+StreetCL.name <- "StreetCL_2.shp"
 
 #9. set path to intersection
 Int.name <- "intersection.shp"
@@ -107,13 +107,12 @@ crs(bikeCrit.raster) <- crs
 
 
 ###Create a total lane raster###
-#Set Path to Total Lane Shapefile
-src_datasource <- paste(shape.path,totalLane.name, sep = "")
 #Rasterize Total Lane
-r.lanePerDir <- raster(ext=extent, resolution = resolution, crs = crs)
-lanePerdir.tif <- writeRaster(r.lanePerDir, filename = "lanePerdir.tif", format="GTiff", overwrite=TRUE)
-lanePerDir.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "lanePerdir.tif", a="lanePerDir",at=TRUE,output_Raster = TRUE)
-crs(lanePerDir.raster) <- crs
+#src_datasource <- paste(shape.path,StreetCL.name, sep = "")
+#r.lanePerDir <- raster(ext=extent, resolution = resolution, crs = crs)
+#lanePerdir.tif <- writeRaster(r.lanePerDir, filename = "lanePerdir.tif", format="GTiff", overwrite=TRUE)
+#lanePerDir.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "lanePerdir.tif", a="lpd",at=TRUE,output_Raster = TRUE)
+#crs(lanePerDir.raster) <- crs
 
 
 #StreetCL layer
@@ -121,6 +120,10 @@ Street <- readOGR(dsn=path.fgdb, layer = "Street_w_Int_Clip")
 maxsp.raster <- raster(ext=extent, resolution = resolution, crs = crs)
 maxsp.raster <- rasterize(Street, maxsp.raster, field="SPEED", fun='max')
 crs(maxsp.raster) <- crs
+
+lanePerDir.raster <- raster(ext=extent, resolution = resolution, crs = crs)
+lanePerDir.raster <- rasterize(Street, lanePerDir.raster, field="lpd", fun='max')
+crs(lanePerDir.raster) <- crs
 
 
 #FUNCTIONS TO BE USED IN THE BLTS SCORE ANALYSIS
@@ -318,16 +321,49 @@ crs(RTL_Conf_W.raster) <- crs
 #####################################################################################################################
 #Rasterize Bike Lane Approach
 src_datasource <- paste(shape.path,StreetCL.name, sep = "")
-r.BL_Appr_Al <- raster(ext=extent, resolution = resolution, crs = crs)
-BL_Appr_Al.tif <- writeRaster(r.BL_Appr_Al, filename = "BL_Appr_Al", format="GTiff", overwrite=TRUE)
-BL_Appr_Al.raster <- gdal_rasterize(src_datasource, dst_filename = "BL_Appr_Al.tif", a="BL_Appr_Al",at=TRUE,output_Raster = TRUE)
-crs(BL_Appr_Al.raster) <- crs
+r.bike_AA_N <- raster(ext=extent, resolution = resolution, crs = crs)
+bike_AA_N.tif <- writeRaster(r.bike_AA_N, filename = "bike_AA_N", format="GTiff", overwrite=TRUE)
+bike_AA_N.raster <- gdal_rasterize(src_datasource, dst_filename = "bike_AA_N.tif", a="bike_AA_N",at=TRUE,output_Raster = TRUE)
+crs(bike_AA_N.raster) <- crs
+
+src_datasource <- paste(shape.path,StreetCL.name, sep = "")
+r.bike_AA_S <- raster(ext=extent, resolution = resolution, crs = crs)
+bike_AA_S.tif <- writeRaster(r.bike_AA_S, filename = "bike_AA_S", format="GTiff", overwrite=TRUE)
+bike_AA_S.raster <- gdal_rasterize(src_datasource, dst_filename = "bike_AA_S.tif", a="bike_AA_S",at=TRUE,output_Raster = TRUE)
+crs(bike_AA_S.raster) <- crs
+
+src_datasource <- paste(shape.path,StreetCL.name, sep = "")
+r.bike_AA_E <- raster(ext=extent, resolution = resolution, crs = crs)
+bike_AA_E.tif <- writeRaster(r.bike_AA_E, filename = "bike_AA_E", format="GTiff", overwrite=TRUE)
+bike_AA_E.raster <- gdal_rasterize(src_datasource, dst_filename = "bike_AA_E.tif", a="bike_AA_E",at=TRUE,output_Raster = TRUE)
+crs(bike_AA_E.raster) <- crs
+
+src_datasource <- paste(shape.path,StreetCL.name, sep = "")
+r.bike_AA_W <- raster(ext=extent, resolution = resolution, crs = crs)
+bike_AA_W.tif <- writeRaster(r.bike_AA_W, filename = "bike_AA_W", format="GTiff", overwrite=TRUE)
+bike_AA_W.raster <- gdal_rasterize(src_datasource, dst_filename = "bike_AA_W.tif", a="bike_AA_W",at=TRUE,output_Raster = TRUE)
+crs(bike_AA_W.raster) <- crs
 
 #Rasterize Right Turn Lane Length
-r.RTL_Length <- raster(ext=extent, resolution = resolution, crs = crs)
-RTL_Length.tif <- writeRaster(r.RTL_Length, filename = "RTL_Length", format="GTiff", overwrite=TRUE)
-RTL_Length.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Length.tif", a="RTL_Length",at=TRUE,output_Raster = TRUE)
-crs(RTL_Length.raster) <- crs
+r.RTL_Len_N <- raster(ext=extent, resolution = resolution, crs = crs)
+RTL_Len_N.tif <- writeRaster(r.RTL_Len_N, filename = "RTL_Len_N", format="GTiff", overwrite=TRUE)
+RTL_Len_N.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Len_N.tif", a="RTL_Len_N",at=TRUE,output_Raster = TRUE)
+crs(RTL_Len_N.raster) <- crs
+
+r.RTL_Len_S <- raster(ext=extent, resolution = resolution, crs = crs)
+RTL_Len_S.tif <- writeRaster(r.RTL_Len_S, filename = "RTL_Len_S", format="GTiff", overwrite=TRUE)
+RTL_Len_S.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Len_S.tif", a="RTL_Len_S",at=TRUE,output_Raster = TRUE)
+crs(RTL_Len_S.raster) <- crs
+
+r.RTL_Len_E <- raster(ext=extent, resolution = resolution, crs = crs)
+RTL_Len_E.tif <- writeRaster(r.RTL_Len_E, filename = "RTL_Len_E", format="GTiff", overwrite=TRUE)
+RTL_Len_E.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Len_E.tif", a="RTL_Len_E",at=TRUE,output_Raster = TRUE)
+crs(RTL_Len_E.raster) <- crs
+
+r.RTL_Len_W <- raster(ext=extent, resolution = resolution, crs = crs)
+RTL_Len_W.tif <- writeRaster(r.RTL_Len_W, filename = "RTL_Len_W", format="GTiff", overwrite=TRUE)
+RTL_Len_W.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Len_W.tif", a="RTL_Len_W",at=TRUE,output_Raster = TRUE)
+crs(RTL_Len_W.raster) <- crs
 
 
 
@@ -339,33 +375,46 @@ scoreRTL[] <- 0
 scoreRTL.temp <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreRTL.temp[] <- 0
 #####################################################################################################################
-#create mask layer for RTL length (Section D2)
-RTL_Length_less150 <-  RTL_Length.raster <= 150 & RTL_Length.raster > 0
-RTL_Length_great150 <- RTL_Length.raster > 150
-RTL_Length_any <- RTL_Length.raster > 0
 
-#create layer for the Right-turn lane approach configuration
-RTL_Appro_Str <- BL_Appr_Al.raster == 1
-RTL_Appro_Lef <- BL_Appr_Al.raster == 2 | BL_Appr_Al.raster == 3
-RTL_Appro_Any <- BL_Appr_Al.raster == 1 | BL_Appr_Al.raster == 2 | BL_Appr_Al.raster == 3 | BL_Appr_Al.raster == 0
 
 #Loop through the RTL Configuration for N, S, E, W and assign score for each direction of the intersection (Section D3)
 #Combine the layers into rasterStack
-int_Dir <- stack(RTL_Conf_N.raster, RTL_Conf_S.raster,RTL_Conf_E.raster,RTL_Conf_W.raster)
-names(int_Dir) <- c("North", "South", "East", "West")
+conf_Dir <- stack(RTL_Conf_N.raster, RTL_Conf_S.raster,RTL_Conf_E.raster,RTL_Conf_W.raster)
+names(conf_Dir) <- c("North", "South", "East", "West")
 
-for (i in 1:nlayers(int_Dir)) {
-  RTL_Conf_S <- int_Dir[[i]] == 1
-  RTL_Conf_DE_S <- int_Dir[[i]] == 2 | int_Dir[[i]] == 1
-  title = names(int_Dir[[i]])
+len_Dir <- stack(RTL_Len_N.raster, RTL_Len_S.raster, RTL_Len_E.raster, RTL_Len_W.raster)
+names(len_Dir) <- c("North", "South", "East", "West")
+
+bike_AA_Dir <- stack(bike_AA_N.raster, bike_AA_S.raster, bike_AA_E.raster, bike_AA_W.raster)
+names(bike_AA_Dir) <- c("North", "South", "East", "West")
+
+for (i in 1:nlayers(conf_Dir)) {
+  scoreRTL.temp[] <- 0
+  RTL_Conf_S <- conf_Dir[[i]] == 1
+  RTL_Conf_DE_S <- conf_Dir[[i]] == 2 | conf_Dir[[i]] == 1
+  title = names(conf_Dir[[i]])
+  
+  RTL_Length_less150 <- len_Dir[[i]] <=150 & len_Dir[[i]] > 0
+  RTL_Length_great150 <- len_Dir[[i]] > 150
+  RTL_Length_any <- len_Dir[[i]] > 0
+  
+  RTL_Appro_Str <- bike_AA_Dir[[i]] == 1
+  RTL_Appro_Lef <- bike_AA_Dir[[i]] == 2 | bike_AA_Dir[[i]] == 3
+  RTL_Appro_Any <- bike_AA_Dir[[i]] == 1 | bike_AA_Dir[[i]] == 2 | bike_AA_Dir[[i]] == 3 | bike_AA_Dir[[i]] == 0
+  
+  
+  
   scoreRTL.temp[RTL_Conf_DE_S & RTL_Length_any & RTL_Appro_Any] <- 4
   scoreRTL.temp[RTL_Conf_S & RTL_Length_great150 & RTL_Appro_Str] <- 3
   scoreRTL.temp[RTL_Conf_S & RTL_Length_any & RTL_Appro_Lef] <- 3
   scoreRTL.temp[RTL_Conf_S & RTL_Length_less150 & RTL_Appro_Str] <- 2
   scoreRTL <- stack(scoreRTL, scoreRTL.temp)
   scoreRTL <- overlay(scoreRTL, fun=max)
-  plot(scoreRTL, main=title)
+  plot(scoreRTL.temp, main=title)
 }
+
+writeRaster(scoreRTL, "scoreRTL.TIFF", overwrite=TRUE)
+
 
 #Overlay the Score w/o intersection and with RTL criteria, assign null value to zero and select the maximum from the two
 #scoreComb_5 <- scoreComb == 5
@@ -377,7 +426,7 @@ Comb_RTL <- stack(scoreComb, scoreRTL)
 scoreCombRTL <- overlay(Comb_RTL, fun = max)
 
 #Plot scores for Comb and with RTL criteria
-plot(scoreRTL)
+plot(scoreRTL, main="Score RTL")
 
 ###Export score as a GeoTiff
 filename <- paste("scoreCombRTL", resolution)
@@ -442,12 +491,13 @@ LTL_LC_Dir <- stack(LTL_lanesc.raster, LTL_lane_1.raster, LTL_lane_2.raster, LTL
 
 #Create evaluation layer for lane crossed in one intersection
 for(i in 1:nlayers(LTL_LC_Dir)) {
+  scoreLTL.temp[] <- 0
   #Setting criteria for evaluation
   laneCrossed_0 <- LTL_LC_Dir[[i]] == 0
   laneCrossed_1 <- LTL_LC_Dir[[i]] == 1
   laneCrossed_2 <- LTL_LC_Dir[[i]] >= 2
   laneCrossed_DE <- LTL_Conf_Dir[[i]] != 0
-
+  
   #Scoring based on Exhibit 14-8 Left Turn Lane Criteria
   scoreLTL.temp[sp25 & laneCrossed_0] <- 2
   scoreLTL.temp[sp25 & laneCrossed_1] <- 2
@@ -479,18 +529,11 @@ score.Comb.RLT.LTL <- stack(scoreComb, scoreLTL)
 score.Comb.RLT.LTL <- overlay(score.Comb.RLT.LTL, fun = max)
 #####################################################################################################################
 
-
-
 #Write Raster Containin the Score for everything
 filename <- paste("scoreComb", resolution)
 writeRaster(score.Comb.RLT.LTL, filename, format = "GTiff", overwrite=TRUE)
 #####################################################################################################################
 #Median Criteria (Section F)
-#rasterize maxspeed
-Street <- readOGR(dsn=path.fgdb, layer = "Street_w_Int_Clip")
-maxsp <- raster(ext=extent, resolution = resolution, crs = crs)
-maxsp <- rasterize(Street, maxsp, field="SPEED", fun='max')
-crs(maxsp) <- crs
 
 #rasterize intersections total lanecrossed
 src_datasource <- paste(shape.path,Int.name, sep = "")
@@ -530,10 +573,10 @@ median.true <- median.raster == 1
 median.false <- median.raster == 0
 
 #mask for speed
-sp25 <- maxsp <= 25
-sp30 <- maxsp == 30
-sp35 <- maxsp == 35
-sp40 <- maxsp >= 40
+sp25 <- maxsp.raster <= 25
+sp30 <- maxsp.raster == 30
+sp35 <- maxsp.raster == 35
+sp40 <- maxsp.raster >= 40
 
 #mask for unsignalized intersection
 unsignal <- signal.raster == 0
@@ -543,6 +586,7 @@ tl_stack <- stack(totallanes_ns.raster, totallanes_ew.raster)
 
 #for loop for intersection that has median
 for (i in 1:nlayers(tl_stack)) {
+  scoreMed.temp[] <- 0
   tlc3 <- tl_stack[[i]] <= 3
   tlc45 <- tl_stack[[i]] == 4 | tl_stack[[i]] == 5
   tlc6 <- tl_stack[[i]] >= 6
@@ -570,6 +614,7 @@ for (i in 1:nlayers(tl_stack)) {
 #####################################################################################################################
 #for loop for intersection that does not has median (Section F4)
 for (i in nlayers(tl_stack)) {
+  scoreMed.temp[] <- 0
   tlc12 <- tl_stack[[i]] == 1 | tl_stack[[i]] == 2
   tlcGreat4 <- tl_stack[[i]] >= 4
   
@@ -603,7 +648,7 @@ writeRaster(scoreALL, filename, format = "GTiff", overwrite=TRUE)
 #####################################################################################################################
 #plotting (Section G)
 #Plot only biking facilities
-pdf("BLTS Score.pdf")
+#pdf("BLTS Score.pdf")
 scorePlot <- raster(ext=extent, resolution = resolution, crs = crs)
 scorePlot[] <- 0
 
@@ -664,7 +709,7 @@ scorePlot <- scoreALL
 scorePlot[scorePlot== 5 | scorePlot == 0] <- NA
 title <- paste("score ALL - Res: ", resolution)
 plot(scorePlot, breaks=breakpoints,col=colors, main=title)
-dev.off()
+#dev.off()
 #####################################################################################################################
 
 #Detect Island of activities
@@ -674,6 +719,7 @@ score12[score12 == 3 | score12 == 4] <- NA
 plot(score12)
 c.score12 <- clump(score12, directions = 8)
 plot(c.score12, main = "Island of score of 1 and 2")
+writeRaster(c.score12, "score12.tif",overwrite=TRUE)
 
 
 #####################################################################################################################
