@@ -6,20 +6,27 @@ library(raster)
 library(gdistance)
 library(rgdal)
 
-path.fgdb <- "G:/CUUATS/Local Accessibility and Mobility Analysis/Data/LocalAccessibilityAndMobilityAnalysis.gdb"
-layerName <- "grocery_stores"
+path.fgdb <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
+layerName <- c("grocery_stores", "park_rec", "emp_center", "service_business")
+resultDir <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/Result/"
 
-
-+setwd("L:/Sustainable Neighborhoods Toolkit/scripts/SustainableNeighborhood")
-score <- raster("scoreALL 100.TIF")
+setwd(resultDir)
+score <- raster("scoreRTL_Med100.TIF")
 
 score <- score * 2
 score[score==0] <- 20
 
-tr1 <- transition(scoretest, function(x) 1/mean(x), direction=4)
+tr1 <- transition(score, function(x) 1/mean(x), direction=4)
 tr1C <- geoCorrection(tr1)
 
-groceryStores <- readOGR(dsn=path.fgdb, layer=layerName)
+
+for (i in 1:length(layerName)) {
+  layer <- readOGR(dsn=path.fgdb, layer=layerName[i])
+  layer_cost <- accCost(tr1C, layer)
+  plot(layer_cost, main=layerName[i])
+  file_name <- layerName[i]
+  writeRaster(layer_cost, file_name, format="GTiff", overwrite=TRUE)
+}
 
 groceryStores_cost <- accCost(tr1C, groceryStores)
 

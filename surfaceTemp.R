@@ -7,7 +7,10 @@ library(rgdal)
 library(rgeos)
 library(sp)
 
-setwd("L:/Sustainable Neighborhoods Toolkit/satelliteImage")
+sourceDir <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/champaignLandSat8/"
+resultDir <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/Result/"
+crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
+setwd(sourceDir)
 
 b10 <- raster("B10projCrop.TIF")
 b11 <- raster("B11projCrop.TIF")
@@ -40,7 +43,10 @@ temp11_celsius <- calc(temp11_kelvin, fun=function(x){x - 273.15})
 #plot
 plot(temp10_celsius)
 
+crs(temp10_celsius) <- crs
+crs(temp11_celsius) <- crs
 #Export raster images
-writeRaster(temp10_celsius, "temp10_c.tif")
-writeRaster(temp11_celsius, "temp11_c.tif")
+setwd(resultDir)
+writeRaster(temp10_celsius, "surfaceTemp.tif")
+#writeRaster(temp11_celsius, "temp11_c.tif")
 

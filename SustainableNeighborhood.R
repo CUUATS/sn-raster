@@ -44,6 +44,9 @@ boundary.fgdb <- "G:/Resources/Data/Boundary.gdb"
 shape.path <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/Shapefile/"
 
 #6. set name for the bike shapefile
+onRoadPath <- "onRoadPath.shp"
+offRoadPath <- "offRoadPath.shp"
+
 bike.name <- "bikeLane.shp"
 
 #8. set name for St CL shapefile
@@ -72,13 +75,18 @@ extent<-extent(UA)
 #########################################################################################################################
 #Section C1
 #Set path to Bike Lane shapefile
-src_datasource <- paste(shape.path,bike.name, sep = "")
+src_datasource <- paste(shape.path,onRoadPath, sep = "")
+r.onRoadPath <- raster(ext=extent, resolution = resolution, crs = crs)
+onRoadPath.tif <- writeRaster(r.onRoadPath, filename = "onRoadPath.tif", format="GTiff", overwrite=TRUE)
+onRoadPath.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "onRoadPath.tif", a="PathType", at=TRUE, output_Raster = TRUE)
+crs(onRoadPath.raster) <- crs
 
-#Rasterize Path Type
-r.bikelane <- raster(ext=extent, resolution = resolution, crs = crs)
-bikelane.tif <- writeRaster(r.bikelane, filename = "bikelane.tif", format="GTiff", overwrite=TRUE)
-facility.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikelane.tif", a="PathType", at=TRUE, output_Raster = TRUE)
-crs(facility.raster) <- crs
+#Off Road
+src_datasource <- paste(shape.path,offRoadPath, sep = "")
+r.offRoadPath <- raster(ext=extent, resolution = resolution, crs = crs)
+offRoadPath.tif <- writeRaster(r.offRoadPath, filename = "offRoadPath.tif", format="GTiff", overwrite=TRUE)
+offRoadPath.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "offRoadPath.tif", a="PathType", at=TRUE, output_Raster = TRUE)
+crs(offRoadPath.raster) <- crs
 
 #Rasterize Bike Path Width
 r.rdWidth <- raster(ext=extent, resolution = resolution, crs = crs)
@@ -105,9 +113,6 @@ bikeCrit.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename 
 crs(bikeCrit.raster) <- crs
 
 
-#Bike Path Type
-
-
 #StreetCL layer
 Street <- readOGR(dsn=path.fgdb, layer = "Street_w_Int_Clip")
 maxsp.raster <- raster(ext=extent, resolution = resolution, crs = crs)
@@ -131,11 +136,11 @@ crs(lanePerDir.raster) <- crs
 scoreBike <- raster(ext=extent, resolution = resolution, crs = crs)
 scoreBike[] <- npv
 
-osft1 <- facility.raster == 1
-osft2 <- facility.raster == 2
-osft3 <- facility.raster == 3
-osft4 <- facility.raster == 4
-osft5 <- facility.raster == 5
+osft1 <- offRoadPath.raster == 1
+osft2 <- offRoadPath.raster == 2
+osft3 <- offRoadPath.raster == 3
+osft4 <- offRoadPath.raster == 4
+osft5 <- offRoadPath.raster == 5
 
 scoreBike[osft1 | osft2 | osft3 | osft4 | osft5] <- 1
 
@@ -187,7 +192,7 @@ lane3 <- lanePerDir.raster >= 3
 
 #Bike Lane with Adjacent Parking Lane Criteria
 #Bike Path Type
-bikelane <- facility.raster == 6 | facility.raster == 9
+bikelane <- onRoadPath.raster == 6 | onRoadPath.raster == 9
 
 #Set the default score for all biking facilities
 scoreBike[bikelane & ly & lpd1 & sp25 & bpw15] <- 1
@@ -263,7 +268,7 @@ scoreMix[spgreat35 & lane3] <- 4
 #Lower the BLTS score by one if sharrow is present (Section C6)
 
 #No bike Lane but has sharrow
-sharrow <- facility.raster == 8
+sharrow <- onRoadPath.raster == 8
 sharrow[sharrow != 1] <- 0
 sharrow[is.na(sharrow)] <- 0
 sharrow[sharrow == 1] <- -1
@@ -618,18 +623,21 @@ for (i in nlayers(tl_stack)) {
 
 scoreALL <- stack(score.Comb.RLT.LTL, scoreMed)
 scoreALL <- overlay(scoreALL, fun=max)
+
+scoreRTL_Med <- stack(scoreCombRTL, scoreMed)
+scoreRTL_Med <- overlay(scoreRTL_Med, fun=max)
 #####################################################################################################################
 #Writing Result
 setwd(resultDir)
 ###Export score as a GeoTiff
-filename <- paste("ScoreMix", resolution, sep="")
+filename <- paste("scoreMix", resolution, sep="")
 writeRaster(scoreComb, filename, format = "GTiff", overwrite=TRUE)
 
 #Write Score for RTL Only 
-filename <- paste("ScoreRTL", resolution, sep="")
+filename <- paste("scoreRTL", resolution, sep="")
 writeRaster(scoreRTL, filename, format = "GTiff", overwrite = TRUE)
 
-###Export score as a GeoTiff
+###RTL with Mix
 filename <- paste("scoreCombRTL", resolution, sep="")
 writeRaster(scoreCombRTL, filename, format = "GTiff", overwrite=TRUE)
 
@@ -637,9 +645,13 @@ writeRaster(scoreCombRTL, filename, format = "GTiff", overwrite=TRUE)
 filename <- paste("scoreLTL", resolution, sep="")
 writeRaster(scoreLTL, filename, format = "GTiff", overwrite=TRUE)
 
-#Write Raster Containin the Score for everything except crossing
+#Mix RTL LTL without Median
 filename <- paste("scoreComb", resolution, sep="")
 writeRaster(score.Comb.RLT.LTL, filename, format = "GTiff", overwrite=TRUE)
+
+#Mix RTL with Median
+filename <- paste("scoreRTL_Med", resolution, sep="")
+writeRaster(scoreRTL_Med, filename, format = "GTiff", overwrite=TRUE)
 
 #Write score for everything
 filename <- paste("scoreALL", resolution, sep="")

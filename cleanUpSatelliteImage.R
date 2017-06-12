@@ -7,7 +7,7 @@ library(rgdal)
 library(rgeos)
 library(sp)
 
-setwd("G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/champaignLandSat8")
+setwd("G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/champaignLandSat8/")
 
 #Set resolution
 resolution = c(100,100)
