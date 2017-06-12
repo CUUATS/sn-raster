@@ -6,11 +6,11 @@ library(raster)
 library(gdistance)
 library(rgdal)
 
-path.fgdb <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
-layerName <- "BikeIntersections"
+path.fgdb <- "G:/CUUATS/Local Accessibility and Mobility Analysis/Data/LocalAccessibilityAndMobilityAnalysis.gdb"
+layerName <- "grocery_stores"
 
 
-setwd("L:/Sustainable Neighborhoods Toolkit/scripts/SustainableNeighborhood")
++setwd("L:/Sustainable Neighborhoods Toolkit/scripts/SustainableNeighborhood")
 score <- raster("scoreALL 100.TIF")
 
 score <- score * 2
@@ -19,8 +19,8 @@ score[score==0] <- 20
 tr1 <- transition(scoretest, function(x) 1/mean(x), direction=4)
 tr1C <- geoCorrection(tr1)
 
-int <- readOGR(dsn=path.fgdb, layer=layerName)
+groceryStores <- readOGR(dsn=path.fgdb, layer=layerName)
 
-int_cost <- accCost(tr1C, int)
+groceryStores_cost <- accCost(tr1C, groceryStores)
 
-writeRaster(int_cost, "int.tif", format="GTiff", overwrite=TRUE)
+writeRaster(groceryStores_cost, "groceryStore_scores.tif", format="GTiff", overwrite=TRUE)
