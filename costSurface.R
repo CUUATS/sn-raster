@@ -31,3 +31,24 @@ for (i in 1:length(layerName)) {
 groceryStores_cost <- accCost(tr1C, groceryStores)
 
 writeRaster(groceryStores_cost, "groceryStore_scores.tif", format="GTiff", overwrite=TRUE)
+
+
+#C <- c(1000000,1260000)
+#U <- c(1030000,1250000)
+#CtoU <- shortestPath(tr1C, C, U, output="SpatialLines")
+#crs(CtoU) <- crs
+#plot(CtoU, add=TRUE)
+
+#df <- data.frame(id = c(1,2))
+#CtoU <- SpatialLinesDataFrame(CtoU, df)
+#dir.create(tempdir)
+#writeOGR(CtoU, dsn="tempdir", layer="CtoU", driver="ESRI Shapefile", overwrite_layer = TRUE)
+
+#A <- accCost(tr1C, C)
+#plot(A)
+#plot(A, breaks = seq(0,100000,25000), col = colors)
+#B <- accCost(tr1C, U)
+#plot(B)
+
+#AB <- overlay(A,B, fun=min)
+#plot(AB)
