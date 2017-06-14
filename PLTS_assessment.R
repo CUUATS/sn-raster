@@ -59,7 +59,7 @@ sidewalk_wid.raster <- sidewalk_wid.raster / 12
 
 r.sidewalk_cond <- raster(ext=extent, resolution=resolution, crs = crs)
 sidewalk_cond.tif <- writeRaster(r.sidewalk_cond , filename = "sidewalk_cond.tif", format="GTiff", overwrite = TRUE)
-sidewalk_cond.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "sidewalk_cond.tif", a="ScoreCondi", at=TRUE, output_Raster = TRUE)
+sidewalk_cond.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "sidewalk_cond.tif", a="ScoreCompl", at=TRUE, output_Raster = TRUE)
 crs(sidewalk_cond.raster) <- crs
 
 
@@ -100,7 +100,7 @@ condition.raster[great6 & veryPoor] <- 3
 
 
 setwd(resultDir)
-filename <- paste("condition", resolution, sep = "")
+filename <- paste("compliance", resolution, sep = "")
 writeRaster(condition.raster, filename, format="GTiff", overwrite = TRUE)
 
 end.time <- Sys.time()
