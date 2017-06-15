@@ -55,8 +55,6 @@ StreetCL.name <- "Street_w_Int_Clip.shp"
 #9. set path to intersection
 Int.name <- "Intersections_all.shp"
 
-#10. projection system
-crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 
 #11. set no path value (In Progress)
 npv <- 5
