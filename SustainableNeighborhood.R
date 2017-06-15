@@ -56,7 +56,9 @@ StreetCL.name <- "Street_w_Int_Clip.shp"
 Int.name <- "Intersections_all.shp"
 
 #10. projection system
-crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
+#Read Boundary for the study area
+UA <- readOGR(dsn=boundary.fgdb, layer="UAB2013")
+crs <- crs(UA)
 
 #11. set no path value (In Progress)
 npv <- 5
@@ -65,8 +67,7 @@ npv <- 5
 
 #READING FEATURE CLASS LINE FILES FROM ESRI GEODATABASE (Section B)
 #####################################################################################################################
-#Read Boundary for the study area
-UA <- readOGR(dsn=boundary.fgdb, layer="UAB2013")
+
 
 #Set Extent for Test Area
 extent<-extent(UA)
@@ -107,7 +108,7 @@ bikeParkWidth.raster <- gdal_rasterize(src_datasource = src_datasource, dst_file
 crs(bikeParkWidth.raster) <- crs
 
 ###Create Bike Lane with Adjacent Parking Lane Criteria
-r.bikeCrit <- raster(ext=extent, resolution = resolution, crs = crs)
+r.bikeCrit <- raster(ext=extent, resolution = resolution, crs=crs)
 bikeCrit.tif <- writeRaster(r.bikeCrit, filename = "bikeCrit.tif", format="GTiff", overwrite=TRUE)
 bikeCrit.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikeCrit.tif", a="hasParki_1",at=TRUE,output_Raster = TRUE)
 crs(bikeCrit.raster) <- crs
@@ -120,8 +121,8 @@ maxsp.raster <- rasterize(Street, maxsp.raster, field="SPEED", fun='max')
 crs(maxsp.raster) <- crs
 
 #Create total Lane Raster
-lanePerDir.raster <- raster(ext=extent, resolution = resolution, crs = crs)
-lanePerDir.raster <- rasterize(Street, lanePerDir.raster, field="lpd", fun='max')
+lanePerDir <- raster(ext=extent, resolution = resolution, crs = crs)
+lanePerDir.raster <- rasterize(Street, lanePerDir, field="lpd", fun='max')
 crs(lanePerDir.raster) <- crs
 
 
@@ -728,3 +729,5 @@ end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
 
+
+keep(maxsp.raster, lanePerDir.raster, sure=TRUE)
