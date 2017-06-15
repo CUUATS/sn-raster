@@ -12,8 +12,8 @@ resultDir <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/Result/"
 crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
 setwd(sourceDir)
 
-b10 <- raster("B10projCrop.TIF")
-b11 <- raster("B11projCrop.TIF")
+b10 <- raster("B10projCrop_20170516.TIF")
+b11 <- raster("B11projCrop_20170516.TIF")
 
 #Values from Metafile
 rad_mult_b10 <- 3.3420E-04
