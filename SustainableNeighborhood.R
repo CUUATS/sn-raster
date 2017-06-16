@@ -55,9 +55,12 @@ StreetCL.name <- "Street_w_Int_Clip.shp"
 #9. set path to intersection
 Int.name <- "Intersections_all.shp"
 
+#crs
+crs <- crs("+init=ESRI:102671")
 
 #11. set no path value (In Progress)
 npv <- 5
+
 
 #*************************************************************************************************************************#
 
@@ -65,60 +68,64 @@ npv <- 5
 #####################################################################################################################
 #Read Boundary for the study area
 UA <- readOGR(dsn=boundary.fgdb, layer="UAB2013")
-
 #Set Extent for Test Area
-extent<-extent(UA)
+UA.pr <- spTransform(UA, crs)
+studyExtent = extent(UA.pr)
+extent.raster <- raster(ext = studyExtent, resolution=resolution, crs=crs)
+extent.raster <- rasterize(UA.pr, extent.raster)
+studyExtent = extent(extent.raster)
+
 
 ####CREATE A RASTER LAYER OBJECT (Section C)####
 #########################################################################################################################
 #Section C1
 #Set path to Bike Lane shapefile
 src_datasource <- paste(shape.path,onRoadPath, sep = "")
-r.onRoadPath <- raster(ext=extent, resolution = resolution, crs = crs)
+r.onRoadPath <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 onRoadPath.tif <- writeRaster(r.onRoadPath, filename = "onRoadPath.tif", format="GTiff", overwrite=TRUE)
 onRoadPath.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "onRoadPath.tif", a="PathType", at=TRUE, output_Raster = TRUE)
-crs(onRoadPath.raster) <- crs
+
 
 #Off Road
 src_datasource <- paste(shape.path,offRoadPath, sep = "")
-r.offRoadPath <- raster(ext=extent, resolution = resolution, crs = crs)
+r.offRoadPath <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 offRoadPath.tif <- writeRaster(r.offRoadPath, filename = "offRoadPath.tif", format="GTiff", overwrite=TRUE)
 offRoadPath.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "offRoadPath.tif", a="PathType", at=TRUE, output_Raster = TRUE)
-crs(offRoadPath.raster) <- crs
+
 
 #Rasterize Bike Path Width
-r.rdWidth <- raster(ext=extent, resolution = resolution, crs = crs)
+r.rdWidth <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 roadWidth.tif <- writeRaster(r.rdWidth, filename = "roadWidth.tif", format = "GTiff", overwrite = TRUE)
 roadWidth.raster <- gdal_rasterize(src_datasource, dst_filename = "roadWidth.tif", a="Width",at=TRUE,output_Raster = TRUE)
-crs(roadWidth.raster) <- crs
+
 
 ###Rasterize Parking Lane Width
-r.pkWidth <- raster(ext=extent, resolution = resolution, crs = crs)
+r.pkWidth <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 pkWidth.tif <- writeRaster(r.pkWidth, filename = "parkingWidth.tif", format="GTiff", overwrite=TRUE)
 parkingWidth.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "parkingWidth.tif", a="pkLaneWidt",at=TRUE,output_Raster = TRUE)
-crs(parkingWidth.raster) <- crs
+
 
 ###Create Combined Parking and Bike Lane Width
-r.bikeParkWidth <- raster(ext=extent, resolution = resolution, crs = crs)
+r.bikeParkWidth <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 bikeParkWidth.tif <- writeRaster(r.bikeParkWidth, filename = "bikeParkWidth.tif", format="GTiff", overwrite=TRUE)
 bikeParkWidth.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikeParkWidth.tif", a="Comb_ParkB",at=TRUE,output_Raster = TRUE)
-crs(bikeParkWidth.raster) <- crs
+
 
 ###Create Bike Lane with Adjacent Parking Lane Criteria
-r.bikeCrit <- raster(ext=extent, resolution = resolution, crs = crs)
+r.bikeCrit <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 bikeCrit.tif <- writeRaster(r.bikeCrit, filename = "bikeCrit.tif", format="GTiff", overwrite=TRUE)
 bikeCrit.raster <- gdal_rasterize(src_datasource = src_datasource, dst_filename = "bikeCrit.tif", a="hasParki_1",at=TRUE,output_Raster = TRUE)
-crs(bikeCrit.raster) <- crs
+
 
 
 #StreetCL layer
 Street <- readOGR(dsn=path.fgdb, layer = "Street_w_Int_Clip")
-maxsp.raster <- raster(ext=extent, resolution = resolution, crs = crs)
+maxsp.raster <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 maxsp.raster <- rasterize(Street, maxsp.raster, field="SPEED", fun='max')
 crs(maxsp.raster) <- crs
 
 #Create total Lane Raster
-lanePerDir.raster <- raster(ext=extent, resolution = resolution, crs = crs)
+lanePerDir.raster <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 lanePerDir.raster <- rasterize(Street, lanePerDir.raster, field="lpd", fun='max')
 crs(lanePerDir.raster) <- crs
 
@@ -131,7 +138,7 @@ crs(lanePerDir.raster) <- crs
 #Physically Seperated Bike Lane 
 #Input is in BikePed Layer, all the off street facilities are assigned a score of 1, all other type of biking facilities
 #are removed from this layer.  Result is the all off road biking facilities and a GeoTiff is exported for later analysis.
-scoreBike <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreBike <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 scoreBike[] <- npv
 
 osft1 <- offRoadPath.raster == 1
@@ -243,7 +250,7 @@ scoreBike[bikelane & ln & lpd2 & sp40 & bwless7] <- 4
 
 #####################################################################################################################
 ### Exhibit 14-5 Urban/Suburban Mixed Traffic Criteria (Section C5)
-scoreMix <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreMix <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 scoreMix[] <- npv
 
 scoreMix[sp25 & lane0] <- 1
@@ -279,7 +286,7 @@ scoreMix[scoreMix == 0] <- 1
 
 #####################################################################################################################
 ##Calculate Combine Score for bike facilities and mix used traffic (Section C7)
-scoreComb <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreComb <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 scoreComb[] <- npv
 stk <- stack(scoreMix,scoreBike)
 scoreComb <- overlay(stk, fun=min)
@@ -290,80 +297,79 @@ scoreComb <- overlay(stk, fun=min)
 
 #Rasterize Right Turn Lane Configuration (Section D1)
 src_datasource <- paste(shape.path,StreetCL.name, sep = "")
-r.RTL_Conf_N <- raster(ext=extent, resolution = resolution, crs = crs)
+r.RTL_Conf_N <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 RTL_Conf_N.tif <- writeRaster(r.RTL_Conf_N, filename = "RTL_Conf_N", format="GTiff", overwrite=TRUE)
 RTL_Conf_N.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_N.tif", a="RTL_Conf_N",at=TRUE,output_Raster = TRUE)
-crs(RTL_Conf_N.raster) <- crs
 
-r.RTL_Conf_S <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.RTL_Conf_S <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 RTL_Conf_S.tif <- writeRaster(r.RTL_Conf_S, filename = "RTL_Conf_S", format="GTiff", overwrite=TRUE)
 RTL_Conf_S.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_S.tif", a="RTL_Conf_S",at=TRUE,output_Raster = TRUE)
-crs(RTL_Conf_S.raster) <- crs
 
-r.RTL_Conf_E <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.RTL_Conf_E <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 RTL_Conf_E.tif <- writeRaster(r.RTL_Conf_E, filename = "RTL_Conf_E", format="GTiff", overwrite=TRUE)
 RTL_Conf_E.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_E.tif", a="RTL_Conf_E",at=TRUE,output_Raster = TRUE)
-crs(RTL_Conf_E.raster) <- crs
 
-r.RTL_Conf_W <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.RTL_Conf_W <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 RTL_Conf_W.tif <- writeRaster(r.RTL_Conf_W, filename = "RTL_Conf_W", format="GTiff", overwrite=TRUE)
 RTL_Conf_W.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Conf_W.tif", a="RTL_Conf_W",at=TRUE,output_Raster = TRUE)
-crs(RTL_Conf_W.raster) <- crs
+
 #####################################################################################################################
 #Rasterize Bike Lane Approach
 src_datasource <- paste(shape.path,StreetCL.name, sep = "")
-r.bike_AA_N <- raster(ext=extent, resolution = resolution, crs = crs)
+r.bike_AA_N <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 bike_AA_N.tif <- writeRaster(r.bike_AA_N, filename = "bike_AA_N", format="GTiff", overwrite=TRUE)
 bike_AA_N.raster <- gdal_rasterize(src_datasource, dst_filename = "bike_AA_N.tif", a="bike_AA_N",at=TRUE,output_Raster = TRUE)
-crs(bike_AA_N.raster) <- crs
+
 
 src_datasource <- paste(shape.path,StreetCL.name, sep = "")
-r.bike_AA_S <- raster(ext=extent, resolution = resolution, crs = crs)
+r.bike_AA_S <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 bike_AA_S.tif <- writeRaster(r.bike_AA_S, filename = "bike_AA_S", format="GTiff", overwrite=TRUE)
 bike_AA_S.raster <- gdal_rasterize(src_datasource, dst_filename = "bike_AA_S.tif", a="bike_AA_S",at=TRUE,output_Raster = TRUE)
-crs(bike_AA_S.raster) <- crs
+
 
 src_datasource <- paste(shape.path,StreetCL.name, sep = "")
-r.bike_AA_E <- raster(ext=extent, resolution = resolution, crs = crs)
+r.bike_AA_E <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 bike_AA_E.tif <- writeRaster(r.bike_AA_E, filename = "bike_AA_E", format="GTiff", overwrite=TRUE)
 bike_AA_E.raster <- gdal_rasterize(src_datasource, dst_filename = "bike_AA_E.tif", a="bike_AA_E",at=TRUE,output_Raster = TRUE)
-crs(bike_AA_E.raster) <- crs
+
 
 src_datasource <- paste(shape.path,StreetCL.name, sep = "")
-r.bike_AA_W <- raster(ext=extent, resolution = resolution, crs = crs)
+r.bike_AA_W <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 bike_AA_W.tif <- writeRaster(r.bike_AA_W, filename = "bike_AA_W", format="GTiff", overwrite=TRUE)
 bike_AA_W.raster <- gdal_rasterize(src_datasource, dst_filename = "bike_AA_W.tif", a="bike_AA_W",at=TRUE,output_Raster = TRUE)
-crs(bike_AA_W.raster) <- crs
+
 
 #Rasterize Right Turn Lane Length
-r.RTL_Len_N <- raster(ext=extent, resolution = resolution, crs = crs)
+r.RTL_Len_N <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 RTL_Len_N.tif <- writeRaster(r.RTL_Len_N, filename = "RTL_Len_N", format="GTiff", overwrite=TRUE)
 RTL_Len_N.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Len_N.tif", a="RTL_Len_N",at=TRUE,output_Raster = TRUE)
-crs(RTL_Len_N.raster) <- crs
 
-r.RTL_Len_S <- raster(ext=extent, resolution = resolution, crs = crs)
+r.RTL_Len_S <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 RTL_Len_S.tif <- writeRaster(r.RTL_Len_S, filename = "RTL_Len_S", format="GTiff", overwrite=TRUE)
 RTL_Len_S.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Len_S.tif", a="RTL_Len_S",at=TRUE,output_Raster = TRUE)
-crs(RTL_Len_S.raster) <- crs
 
-r.RTL_Len_E <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.RTL_Len_E <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 RTL_Len_E.tif <- writeRaster(r.RTL_Len_E, filename = "RTL_Len_E", format="GTiff", overwrite=TRUE)
 RTL_Len_E.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Len_E.tif", a="RTL_Len_E",at=TRUE,output_Raster = TRUE)
-crs(RTL_Len_E.raster) <- crs
 
-r.RTL_Len_W <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.RTL_Len_W <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 RTL_Len_W.tif <- writeRaster(r.RTL_Len_W, filename = "RTL_Len_W", format="GTiff", overwrite=TRUE)
 RTL_Len_W.raster <- gdal_rasterize(src_datasource, dst_filename = "RTL_Len_W.tif", a="RTL_Len_W",at=TRUE,output_Raster = TRUE)
-crs(RTL_Len_W.raster) <- crs
+
 
 
 
 #####################################################################################################################
 #Create empty raster to store the score
-scoreRTL <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreRTL <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 scoreRTL[] <- 0
 
-scoreRTL.temp <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreRTL.temp <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 scoreRTL.temp[] <- 0
 #####################################################################################################################
 
@@ -421,52 +427,52 @@ scoreCombRTL[osft1 | osft2 | osft3 | osft4 | osft5] <- 1
 #rasterize Criteria for Left Turn Lane (Section E1)
 #Lane Cross
 src_datasource <- paste(shape.path,StreetCL.name, sep = "")
-r.LTL_lanesc <- raster(ext=extent, resolution = resolution, crs = crs)
+r.LTL_lanesc <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 LTL_lanesc.tif <- writeRaster(r.LTL_lanesc, filename = "LTL_lanesc", format="GTiff", overwrite=TRUE)
 LTL_lanesc.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_lanesc.tif", a="LTL_lanesc",at=TRUE,output_Raster = TRUE)
-crs(LTL_lanesc.raster) <- crs
 
-r.LTL_lane_1 <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.LTL_lane_1 <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 LTL_lane_1.tif <- writeRaster(r.LTL_lane_1, filename = "LTL_lane_1", format="GTiff", overwrite=TRUE)
 LTL_lane_1.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_lane_1.tif", a="LTL_lane_1",at=TRUE,output_Raster = TRUE)
-crs(LTL_lane_1.raster) <- crs
 
-r.LTL_lane_2 <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.LTL_lane_2 <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 LTL_lane_2.tif <- writeRaster(r.LTL_lane_2, filename = "LTL_lane_2", format="GTiff", overwrite=TRUE)
 LTL_lane_2.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_lane_2.tif", a="LTL_lane_2",at=TRUE,output_Raster = TRUE)
-crs(LTL_lane_2.raster) <- crs
 
-r.LTL_lane_3 <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.LTL_lane_3 <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 LTL_lane_3.tif <- writeRaster(r.LTL_lane_3, filename = "LTL_lane_3", format="GTiff", overwrite=TRUE)
 LTL_lane_3.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_lane_3.tif", a="LTL_lane_3",at=TRUE,output_Raster = TRUE)
-crs(LTL_lane_3.raster) <- crs
+
 #####################################################################################################################
 #Intersection Configuation
-r.LTL_Conf_N <- raster(ext=extent, resolution = resolution, crs = crs)
+r.LTL_Conf_N <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 LTL_Conf_N.tif <- writeRaster(r.LTL_Conf_N, filename = "LTL_Conf_N", format="GTiff", overwrite=TRUE)
 LTL_Conf_N.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_Conf_N.tif", a="LTL_Conf_N",at=TRUE,output_Raster = TRUE)
-crs(LTL_Conf_N.raster) <- crs
 
-r.LTL_Conf_S <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.LTL_Conf_S <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 LTL_Conf_S.tif <- writeRaster(r.LTL_Conf_S, filename = "LTL_Conf_S", format="GTiff", overwrite=TRUE)
 LTL_Conf_S.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_Conf_S.tif", a="LTL_Conf_S",at=TRUE,output_Raster = TRUE)
-crs(LTL_Conf_S.raster) <- crs
 
-r.LTL_Conf_E <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.LTL_Conf_E <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 LTL_Conf_E.tif <- writeRaster(r.LTL_Conf_E, filename = "LTL_Conf_E", format="GTiff", overwrite=TRUE)
 LTL_Conf_E.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_Conf_E.tif", a="LTL_Conf_E",at=TRUE,output_Raster = TRUE)
-crs(LTL_Conf_E.raster) <- crs
 
-r.LTL_Conf_W <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.LTL_Conf_W <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 LTL_Conf_W.tif <- writeRaster(r.LTL_Conf_W, filename = "LTL_Conf_W", format="GTiff", overwrite=TRUE)
 LTL_Conf_W.raster <- gdal_rasterize(src_datasource, dst_filename = "LTL_Conf_W.tif", a="LTL_Conf_W",at=TRUE,output_Raster = TRUE)
-crs(LTL_Conf_W.raster) <- crs
+
 #####################################################################################################################
 #Create empty raster to store the score for LTL (Section E2)
-scoreLTL <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreLTL <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 scoreLTL[] <- 0
 
-scoreLTL.temp <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreLTL.temp <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 scoreLTL.temp[] <- 0
 
 #Create Stack for LTL Criteria
@@ -505,7 +511,7 @@ for(i in 1:nlayers(LTL_LC_Dir)) {
 
 
 #Combinging the Score with Mixed Used, Bike Lane, RLT and LTL (Section E4)
-score.Comb.RLT.LTL <- raster(ext=extent, resolution = resolution, crs = crs)
+score.Comb.RLT.LTL <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 score.Comb.RLT.LTL[] <- 0
 score.Comb.RLT.LTL <- stack(scoreComb, scoreLTL)
 score.Comb.RLT.LTL <- overlay(score.Comb.RLT.LTL, fun = max)
@@ -518,35 +524,34 @@ score.Comb.RLT.LTL[osft1 | osft2 | osft3 | osft4 | osft5] <- 1
 
 #rasterize intersections total lanecrossed
 src_datasource <- paste(shape.path,Int.name, sep = "")
-r.totallanes_ns <- raster(ext=extent, resolution = resolution, crs = crs)
+r.totallanes_ns <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 totallanes_ns.tif <- writeRaster(r.totallanes_ns, filename = "totallanes_ns", format="GTiff", overwrite=TRUE)
 totallanes_ns.raster <- gdal_rasterize(src_datasource, dst_filename = "totallanes_ns.tif", a="TotalLanes",at=TRUE,output_Raster = TRUE)
-crs(totallanes_ns.raster) <- crs
 
-r.totallanes_ew <- raster(ext=extent, resolution = resolution, crs = crs)
+
+r.totallanes_ew <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 totallanes_ew.tif <- writeRaster(r.totallanes_ew, filename = "totallanes_ew", format="GTiff", overwrite=TRUE)
 totallanes_ew.raster <- gdal_rasterize(src_datasource, dst_filename = "totallanes_ew.tif", a="TotalLan_1",at=TRUE,output_Raster = TRUE)
-crs(totallanes_ew.raster) <- crs
+
 
 #rasterize median (Y/N)
-r.median <- raster(ext=extent, resolution = resolution, crs = crs)
+r.median <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 median.tif <- writeRaster(r.median, filename = "median.tif", format="GTiff", overwrite=TRUE)
 median.raster <- gdal_rasterize(src_datasource, dst_filename = "median.tif", a="med_ref_al",at=TRUE,output_Raster = TRUE)
-crs(median.raster) <- crs
 
 #raster signalized intersection (Y/N)
-r.signal <- raster(ext=extent, resolution = resolution, crs = crs)
+r.signal <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 signal.tif <- writeRaster(r.signal, filename = "signal.tif", format="GTiff", overwrite=TRUE)
 signal.raster <- gdal_rasterize(src_datasource, dst_filename = "signal.tif", a="signal",at=TRUE,output_Raster = TRUE)
-crs(signal.raster) <- crs
+
 
 #####################################################################################################################
 
 #create an empty score layer for Median criteria (Section F3)
-scoreMed <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreMed <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 scoreMed[] <- 0
 
-scoreMed.temp <- raster(ext=extent, resolution = resolution, crs = crs)
+scoreMed.temp <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 scoreMed.temp[] <- 0
 
 #Criterias for Median
@@ -660,7 +665,7 @@ writeRaster(scoreALL, filename, format = "GTiff", overwrite=TRUE)
 #plotting (Section G)
 #Plot only biking facilities
 #pdf("BLTS Score.pdf")
-scorePlot <- raster(ext=extent, resolution = resolution, crs = crs)
+scorePlot <- raster(ext=studyExtent, resolution = resolution, crs = crs)
 scorePlot[] <- 0
 
 breakpoints <- c(0,1,2,3,4)
@@ -725,4 +730,6 @@ plot(scorePlot, breaks=breakpoints,col=colors, main=title)
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
+
+keep(maxsp.raster, lanePerDir.raster, sure=TRUE)
 
