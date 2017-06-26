@@ -7,66 +7,36 @@ library(gdistance)
 library(gdata)
 library(rgeos)
 
-  
-
-Read_featureClass  = function(path, fc_name, crs) {
-  fc = readOGR(dsn=path, layer=fc_name)
-  fc.tr = spTransform(fc, crs)
-  return(fc.tr) ## return R dataframe object
-}
+workDir = "G:/CUUATS/Sustainable Neighborhoods Toolkit/Scripts"
+setwd(workDir)
+source('BLTS_param.R')
+source('BLTS_functions.R')
 
 
-Set_studyExtent = function(boundary) {
-  return(extent(boundary))  ## return a extent
-}
-
-
-Crop_featureClass = function(boundary, fc) {
-  return(crop(fc, boundary))  ## return a cropped R object
-}
-
-
-#R_rasterizeFunction = function(object, crs, ext, res, attr_list) {
-#  streetCL.stk = stack()
-#  for (attribute in attr_list) {
-#    print(attribute)
-#    object.raster = raster(ext=ext, res=res, crs = crs)
-#    object.raster = rasterize(object, object.raster, field=attribute)
-#    streetCL.stk = addLayer(streetCL.stk, object.raster)
-#  }
-#  return(streetCL.stk)
-#}
-
-R_rasterizeFunction = function(object, crs, ext, res, attr) {
-  object.raster = raster(ext = ext, res = res, crs = crs)
-  object.raster = rasterize(object, object.raster, field = attr)
-  return(object.raster)
-}
-
-
-BLwAdjPk_function = function() {
-  
-}
-
-
-path.fgdb = "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
-streetCL.name = "test_CL"
-boundary.fgdb = "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
-boundary.name = "test_boundary"
-crs = crs("+init=ESRI:102671")
-res = 100
-
+#Setting up boundary
 boundary = Read_featureClass(boundary.fgdb, boundary.name, crs)
 streetCL = Read_featureClass(path.fgdb, streetCL.name, crs)
+bikePath = Read_featureClass(path.fgdb, bikePath.name, crs)
 studyExtent = Set_studyExtent(boundary)
 streetCL = Crop_featureClass(boundary, streetCL)
-streetCL_list = list('lpd', 'SPEED', )
-BLwAdjPk.stk = R_rasterizeFunction(streetCL, , crs, studyExtent, res, streetCL_list)
+bikePath.onRoad = Subsetting_FeatureClass(bikePath, pathType, onRoadPath_list)
 
+
+
+#Subsetting feature class 
+Bike = readOGR(dsn = path.fgdb, layer = bikePath.name)
+pathType = list(1,2,3,4,5)
+for (param in pathType) {
+  if (pathType[param] == 1) {
+    Bike.subset = Bike[Bike[[pathType]] == param, ]
+  } else {
+    temp = Bike[Bike[[pathType]] == param, ]
+    Bike.subset = rbind(Bike.subset, temp)
+  }
   
-plot(speed.gdal)
-plot(streetCL)
-plot(speed.raster[[2]])
+}
+
+plot(Bike.subset, main = "all")
 
 
 

@@ -1,69 +1,47 @@
+#nvdi.r
+#This script calculate ndvi index from satellite image for the study area
+#by Edmond Lai - CUUATS Sustainable Neighborhood Project
+
 library(raster)
 library(rgdal)
 library(rgeos)
 library(sp)
 
-setwd("C:/Users/kml42638/Desktop/remote")
+sourceDir <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/champaignLandSat8/"
+resultDir <- "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/Result/"
+crs <- crs("+init=ESRI:102671")
+setwd(resultDir)
+scoreALL <- raster("ScoreALL100.tif")
 
 
-#4. set path to the study area geodatabase
-boundary.fgdb <- "G:/Resources/Data/Boundary.gdb"
-#Read Boundary for the study area
-UA <- readOGR(dsn=boundary.fgdb, layer="UAB2013")
-UA.r <- raster(crs=crs, ext=extent)
-UA.r <- rasterize(UA, UA.r)
-#Set Extent for Test Area
-extent<-extent(UA)
-
-
-crs <- "+proj=tmerc +lat_0=36.66666666666666 +lon_0=-88.33333333333333 +k=0.9999749999999999 +x_0=300000 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs"
-
-#reproject and crop
-b2 <- raster("LC08_L1TP_023032_20170510_20170516_01_T1_B2.TIF")
-b2proj <- projectRaster(b2, crs = crs, res = c(100,100))
-b2proj.crop <- crop(b2proj, extent(UA))
-res(b2proj.crop)
-
-b3 <- raster("LC08_L1TP_023032_20170510_20170516_01_T1_B3.TIF", ext = extent)
-b3proj <- projectRaster(b3, crs = crs, res = c(100,100))
-b3proj.crop <- crop(b3proj, extent(UA))
-
-
-b5 <- raster("LC08_L1TP_023032_20170510_20170516_01_T1_B5.TIF", ext = extent)
-b5proj <- projectRaster(b5, crs = crs, res = c(100,100))
-b5proj.crop <- crop(b5proj, extent(UA))
-
-
-b4 <- raster("LC08_L1TP_023032_20170510_20170516_01_T1_B4.TIF", ext = extent)
-b4proj <- projectRaster(b4, crs = crs, res = c(100,100))
-b4proj.crop <- crop(b4proj, extent(UA))
-
-#plot
-plot(b2proj.crop, main = "B2")
-plot(b3proj.crop, main = "B3")
-plot(b4proj.crop, main = "B4")
-plot(b5proj.crop, main = "B5")
+setwd("G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/champaignLandSat8/")
+#import satellite image
+b4 <- raster("B4crop.tr_20160912.tif")
+b5 <- raster("B5crop.tr_20160912.tif")
 
 #Calculate vegetation index
-NDVI = (b5proj.crop-b4proj.crop) / (b5proj.crop+b4proj.crop)
+NDVI = (b5-b4) / (b5+b4)
+NDVI = projectRaster(from=NDVI, to=scoreALL)
 plot(NDVI, main="NDVI")
+
+setwd(resultDir)
 writeRaster(NDVI, "NDVI.tif", format = "GTiff", overwrite=TRUE)
 
 
 #vegetation area
-ndvi.veg <- raster(ext=extent, res=res(NDVI), crs=crs)
-veg <- NDVI > .4
-ndvi.veg[veg] <- 1
-plot(ndvi.veg)
+NDVI.veg <- raster(ext=extent(NDVI), res=res(NDVI), crs=crs(NDVI))
+veg <- NDVI > .3
+NDVI.veg[veg] <- -.5
+NDVI.veg[is.na(NDVI.veg)] <- 0
 
-#write raster
-writeRaster(b2proj.crop, "B2projCrop.tif",format = "GTiff", overwrite=TRUE)
-writeRaster(b3proj.crop, "B3projCrop.tif",format = "GTiff", overwrite=TRUE)
-writeRaster(b4proj.crop, "B4projCrop.tif",format = "GTiff", overwrite=TRUE)
-writeRaster(b5proj.crop, "B5projCrop.tif",format = "GTiff", overwrite=TRUE)
+scoreALL[scoreALL==0] <- NA
 
+writeRaster(NDVI.veg, "ndviVeg.tif", format="GTiff", overwrite=TRUE)
 
+crs(scoreALL) <- crs
 
+canopy = scoreALL + NDVI.veg
 
-#read grid data for dsm and dtm
+plot(canopy)
+writeRaster(canopy, "canopy.tif", format="GTiff", overwrite=TRUE)
 
