@@ -1,6 +1,7 @@
 from setUpDB import WorkspaceFixture
 import arcpy
 import os
+import datetime
 
 WorkspaceFixture.setUpModule()
 WorkspaceFixture.setUpTempDatabase()
@@ -19,12 +20,14 @@ class compare_FeatureClass(object):
     @classmethod
     def add_notfication_field(self):
     # add the require field to the target and original database
-        arcpy.AddField_management(self.FEATURE_CLASS_PCD, "Match", "TEXT")
+        pcd_list = ["Match", "Del", "Added"]
+        for field in pcd_list:
+            arcpy.AddField_management(self.FEATURE_CLASS_PCD, field, "TEXT")
         arcpy.AddField_management(self.FEATURE_CLASS_TEMP, "Match", "TEXT")
 
     @classmethod
-    # read the feature class from both database
-    def compare_FeatureClass(cls):
+    # read the feature class from both database and compare the shape, update if matches are found
+    def compare_FeatureClassShape(cls):
         fields = ["SHAPE", "Match"]
         with arcpy.da.UpdateCursor(cls.FEATURE_CLASS_PCD, fields) as cursor1:
             for row1 in cursor1:
@@ -41,8 +44,32 @@ class compare_FeatureClass(object):
                             cursor1.updateRow(row1)
                             cursor2.updateRow(row2)
 
+    @classmethod
+    def delete_PCD_fc(cls):
+        fields = ["Match", "Del"]
+        with arcpy.da.UpdateCursor(cls.FEATURE_CLASS_PCD, fields) as cursor:
+            for row in cursor:
+                if row[0] != "Yes":
+                    row[1] = "Yes"
+                    cursor.updateRow(row)
+
+    @classmethod
+    def add_temp_fc(cls):
+        field = ["Match", "Added"]
+        with arcpy.da.UpdateCursor(cls.FEATURE_CLASS_TEMP, "*") as cursor:
+            with arcpy.da.UpdateCursor(cls.FEATURE_CLASS_PCD, "*") as cursor1:
+                for row in cursor:
+                    if row["Match"] != "Yes":
+                        row["Added"] = "Today"
+                        cursor.updateRow(row)
+                        cursor1.insertRow(row)
+
+
+
 
 compare_FeatureClass.add_notfication_field()
-compare_FeatureClass.compare_FeatureClass()
+compare_FeatureClass.compare_FeatureClassShape()
+compare_FeatureClass.delete_PCD_fc()
+compare_FeatureClass.add_temp_fc()
 
-WorkspaceFixture.tearDownModule()
+#WorkspaceFixture.tearDownModule()
