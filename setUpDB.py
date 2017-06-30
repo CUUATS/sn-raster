@@ -27,7 +27,7 @@ class WorkspaceFixture(object):
     )
     PDC_FEATURE_CLASS_DATA = (
         ('Road A', '2', 35, 2, ([0, 0], [0, 6])),
-        ('B Avenue', '3', 40, 4, ([0, 0], [5, 0])),
+        ('B Avenue', '3', 40, 4, ([0, 0], [5, 1])),
         ('C Street', '4', 25, 1, ([0, 0], [0, -5]))
     )
     CCGISC_FEATURE_CLASS_DATA = (

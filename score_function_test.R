@@ -5,6 +5,7 @@ scoreRaster <- function(x, ...) {
   dimensions <- list(...)
   if (length(x) != prod(lengths(dimensions))) stop('Length of x must match product of dimension lengths')
   scores <- array(x, lengths(dimensions))
+  plot(scores)
   print(dimensions)
   print(scores)
 }

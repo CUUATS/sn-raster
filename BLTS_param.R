@@ -3,7 +3,7 @@
 #path and location of databases
 path.fgdb = "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
 streetCL.name = "test_CL"
-bikePath.name = "BicyclePedestrianPath"
+bikePath.name = "BicyclePedestrianPath_Clip_Adj"
 
 boundary.fgdb = "G:/CUUATS/Sustainable Neighborhoods Toolkit/Data/SustainableNeighborhoodsToolkit.gdb"
 boundary.name = "test_boundary"
@@ -15,11 +15,14 @@ res = 100
 #attribute field name
 lpd = "lpd"
 speed = "SPEED"
-hasParking = "hasParki_1"
-combPkWidth = "Comb_ParkB"
+hasParking = "hasParking"
+combPkWidth = "Comb_ParkBike_width"
+markedCL = "markedCL"
 
-pathType = "pathType"
-onRoadPath_list = list(1,2,3,4,5)
+PathType = "PathType"
+offRoadPath_list = list(1,2,3,4,5)
+onRoadPath_list = list(6,8,9,10)
+
 
 
 

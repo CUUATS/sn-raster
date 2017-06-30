@@ -24,21 +24,25 @@ class compare_FeatureClass(object):
 
     @classmethod
     # read the feature class from both database
-    def read_FeatureClass(cls):
-        with arcpy.da.SearchCursor(cls.FEATURE_CLASS_PCD, "*") as cursor1:
+    def compare_FeatureClass(cls):
+        fields = ["SHAPE", "Match"]
+        with arcpy.da.UpdateCursor(cls.FEATURE_CLASS_PCD, fields) as cursor1:
             for row1 in cursor1:
-                hash1 = hash(row1[1])
+                hash1 = hash(row1[0])
                 print(hash1)
-                with arcpy.da.SearchCursor(cls.FEATURE_CLASS_TEMP, "*") as cursor2:
+                with arcpy.da.UpdateCursor(cls.FEATURE_CLASS_TEMP, fields) as cursor2:
                     for row2 in cursor2:
-                        hash2 = hash(row2[1])
+                        hash2 = hash(row2[0])
                         print(hash2)
                         if hash1 == hash2:
                             print("match")
-
+                            row1[1] = "Yes"
+                            row2[1] = "Yes"
+                            cursor1.updateRow(row1)
+                            cursor2.updateRow(row2)
 
 
 compare_FeatureClass.add_notfication_field()
-compare_FeatureClass.read_FeatureClass()
+compare_FeatureClass.compare_FeatureClass()
 
-#WorkspaceFixture.tearDownModule()
+WorkspaceFixture.tearDownModule()

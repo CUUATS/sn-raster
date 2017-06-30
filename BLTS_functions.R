@@ -1,4 +1,6 @@
 #BLTS Functions
+library(rgeos)
+library(raster)
 
 Read_featureClass  = function(path, fc_name, crs) {
   fc = readOGR(dsn=path, layer=fc_name)
@@ -23,28 +25,43 @@ R_rasterizeFunction = function(object, crs, ext, res, attr) {
   return(object.raster)
 }
 
+Subsetting_featureClass = function(featureClass, attr_list) {
+  index = 0
+  for (attr in attr_list) {
+    if (index == 0) {
+      fc.final = subset(featureClass, PathType == attr)
+      index = 1
+    }
+    else {
+      fc.temp = subset(featureClass, PathType == attr)
+      fc.final = rbind(fc.temp, fc.final)
+    }
+  }
+  return(fc.final)
+}
 
-bl_adj_pk_function = function(streetCL, bikePath, lpd, speed, hasParking, combPkWidth) {
-  bl_adj_pk.stk = stk()
-  street_list = list(lpd, speed)
-  bl_adj_pk.stk = addLayer(R_rasterizeFunction(streetCL, crs, ext, res, street_list))
   
-  bikePath_list = list(hasParki, combPkWidth)
-  bl_adj_pk.stk = addLayer(R_rasterizeFunction(bikePath, crs, ext, res, bikePath_list))
+bl_adj_pk_function = function(streetCL, bikePath, lpd, speed, hasParking, combPkWidth) {
+  # rasterize layers neccessary for the analysis
+  bl_adj_pk.stk = stack()
+  street_list = c(lpd, speed)
+  for (attr in street_list) {
+    bl_adj_pk.stk = stack(bl_adj_pk.stk, R_rasterizeFunction(streetCL, crs, studyExtent, res, attr))
+  }
+  
+  bikePath_list = c(hasParking, combPkWidth)
+  for (attr1 in bikePath_list) {
+    bl_adj_pk.stk = stack(bl_adj_pk.stk, R_rasterizeFunction(bikePath, crs, studyExtent, res, attr1))
+  }
+  
+  # assign name to the raster layers
+  comb_list = c(street_list, bikePath_list)
+  names(bl_adj_pk.stk) = comb_list
+  
+  
   return(bl_adj_pk.stk)
 }
 
-Subsetting_FeatureClass = function(fc, field, params) {
-  for (param in params) {
-    if (params[param] == 1) {
-      fc.subset = fc[fc$field == param, ]
-    } else {
-      temp = fc[fc$field == param, ]
-      fc.subset = rbind(fc.subset, temp)
-    }
-    
-  }
-  return(fc.subset)
-}
+
 
 
