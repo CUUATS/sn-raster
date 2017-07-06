@@ -47,35 +47,43 @@ Subsetting_featureClass = function(featureClass, attr_list) {
 }
 
 
-# Bike lane function  
-bikeLane_function = function(streetCL, bikePath, lpd, speed, hasParking, combPkWidth) {
+# Segment function  
+Segment_function = function(streetCL, bikePath, lpd, speed, hasParking, combPkWidth) {
   ## rasterize layers neccessary for the analysis
-  bikeLane.stk = stack()
+  segment.stk = stack()
   street_list = c(lpd, speed)
   for (attr in street_list) {
-    bikeLane.stk = stack(bikeLane.stk, R_rasterizeFunction(streetCL, crs, studyExtent, res, attr))
+    segment.stk = stack(segment.stk, R_rasterizeFunction(streetCL, crs, studyExtent, res, attr))
   }
   
-  bikePath_list = c(hasParking, combPkWidth, parkingLaneWidth)
+  bikePath_list = c(hasParking, combPkWidth, parkingLaneWidth, PathType)
   for (attr1 in bikePath_list) {
-    bikeLane.stk = stack(bikeLane.stk, R_rasterizeFunction(bikePath, crs, studyExtent, res, attr1))
+    segment.stk = stack(segment.stk, R_rasterizeFunction(bikePath, crs, studyExtent, res, attr1))
   }
   
-  ## assign name to the raster layers
-  comb_list = c(street_list, bikePath_list)
-  names(bikeLane.stk) = comb_list
   
-  street_list = c(lpd, speed)
-  bikePath_list = c(hasParking, combPkWidth, parkingLaneWidth)
+  
+  ## Assign name to the raster layers
   comb_list = c(street_list, bikePath_list)
-  names(bikeLane.stk) = comb_list
+  ###names(segment.stk) = comb_list
+  
+  comb_list = c(street_list, bikePath_list)
+  names(segment.stk) = comb_list
 
   
-  bikeScore.stk = stack(BikeLaneAdjParkingLane_Function(bikeLane.stk), 
-                        BikeLaneWOAdjParkingLane_Function(bikeLane.stk))
-  bikeScore.raster = overlay(bikeScore.stk, fun='max')
+  bikeScore.stk = stack(BikeLaneAdjParkingLane_Function(segment.stk), 
+                        BikeLaneWOAdjParkingLane_Function(segment.stk))
+  bikeScore.raster = overlay(bikeScore.stk, fun = 'max')
+  bikeScore.raster[bikeScore.raster == 0] <- 5
+  plot(bikeScore.raster, main="bike")
   
-  return(bikeScore.raster)
+  mixTraffic.raster = MixCriteria_function(segment.stk)
+  
+  segment.stk = stack(bikeScore.raster, mixTraffic.raster)
+  segment.score = overlay(segment.stk, fun = 'min')
+  
+  segment.score = Sharrow_function(segment.score, segment.stk)
+  return(segment.score)
 }
 
 

@@ -29,8 +29,8 @@ offRoadPath = Subsetting_featureClass(bikePath, offRoadPath_list)
 onRoadPath = Subsetting_featureClass(bikePath, onRoadPath_list)
 
 # Rasterizing feature class
-bikeLane.score = bikeLane_function(streetCL, onRoadPath, lpd, speed, hasParking, combPkWidth)
-plot(bikeLane.score)
+segment.score = Segment_function(streetCL, onRoadPath, lpd, speed, hasParking, combPkWidth)
+plot(segment.score, main="segment score")
 
 
 

@@ -18,11 +18,13 @@ speed = "SPEED"
 hasParking = "hasParking"
 combPkWidth = "Comb_ParkBike_width"
 parkingLaneWidth = "pkLaneWidth"
+
 markedCL = "markedCL"
 
 PathType = "PathType"
 offRoadPath_list = list(1,2,3,4,5)
 onRoadPath_list = list(6,8,9,10)
+sharrow = 8
 
 
 

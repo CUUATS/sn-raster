@@ -51,7 +51,6 @@ BikeLaneAdjParkingLane_Function <- function(stk) {
   bikeLaneWAdjPL.score[hasParking & two_lpd & equal_35 & bl_pl_width_less15] <- 3
   bikeLaneWAdjPL.score[hasParking & two_lpd & great_40 & bl_pl_width_less15] <- 4
   
-  plot(bikeLaneWAdjPL.score, main="w")
   return(bikeLaneWAdjPL.score)
 }
 
@@ -100,14 +99,13 @@ BikeLaneWOAdjParkingLane_Function <- function(stk) {
   bikeLaneWOAdjPL.score[noParking & two_lpd & equal_35 & bl_less_7] <- 3
   bikeLaneWOAdjPL.score[noParking & two_lpd & great_40 & bl_less_7] <- 4
 
-  plot(bikeLaneWOAdjPL.score, main="wo")
   return(bikeLaneWOAdjPL.score)
 }
 
 # Urban/Suburban Mixed Traffic Criteria
 MixCriteria_function <- function(stk) {
   mixTraffic.score = raster(ext = studyExtent, crs = crs, res = res)
-  mixTraffic.score = 0
+  mixTraffic.score[] <- 5
   
   ## Set up masks
   lpd.raster = stk[[lpd]]
@@ -121,10 +119,28 @@ MixCriteria_function <- function(stk) {
   equal_30 = speed.raster == 30
   great_35 = speed.raster >= 35
   
+  mixTraffic.score[less_25 & unmarked] <- 1
+  mixTraffic.score[equal_30 & unmarked] <- 2
+  mixTraffic.score[great_35 & unmarked] <- 3
   
+  mixTraffic.score[less_25 & lpd_1] <- 2
+  mixTraffic.score[equal_30 & lpd_1] <- 3
+  mixTraffic.score[great_35 & lpd_1] <- 4
   
+  mixTraffic.score[less_25 & lpd_2] <- 3
+  mixTraffic.score[equal_30 & lpd_2] <- 4
+  mixTraffic.score[great_35 & lpd_2] <- 4
+  
+  mixTraffic.score[less_25 & lpd_3plus] <- 4
+  mixTraffic.score[equal_30 & lpd_3plus] <- 4
+  mixTraffic.score[great_35 & lpd_3plus] <- 4
+  
+  return(mixTraffic.score)
 }
 
-
+# Sharrow Criteria
+Sharrow_function <- function(score, stk) {
+  
+}
 
 

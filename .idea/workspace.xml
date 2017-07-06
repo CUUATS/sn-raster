@@ -6,10 +6,7 @@
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/BLTS_2.R" afterPath="$PROJECT_DIR$/BLTS_2.R" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/BLTS_functions.R" afterPath="$PROJECT_DIR$/BLTS_functions.R" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/BLTS_param.R" afterPath="$PROJECT_DIR$/BLTS_param.R" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/compareFeatureClass.py" afterPath="$PROJECT_DIR$/compareFeatureClass.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/compareFeatureClass_ccgisc.py" afterPath="$PROJECT_DIR$/compareFeatureClass_ccgisc.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/setUpDB.py" afterPath="$PROJECT_DIR$/setUpDB.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test.py" afterPath="$PROJECT_DIR$/test.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/BLTS_score.R" afterPath="$PROJECT_DIR$/BLTS_score.R" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -45,11 +42,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="compareFeatureClass.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="compareFeatureClass.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/compareFeatureClass.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="497">
-              <caret line="45" column="45" lean-forward="false" selection-start-line="45" selection-start-column="45" selection-end-line="45" selection-end-column="45" />
+            <state relative-caret-position="714">
+              <caret line="42" column="45" lean-forward="true" selection-start-line="42" selection-start-column="45" selection-end-line="42" selection-end-column="45" />
               <folding>
                 <element signature="e#0#36#0" expanded="true" />
               </folding>
@@ -57,13 +54,12 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="compareFeatureClass_ccgisc.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="compareFeatureClass_ccgisc.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/compareFeatureClass_ccgisc.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-459">
+            <state relative-caret-position="816">
               <caret line="52" column="34" lean-forward="true" selection-start-line="52" selection-start-column="34" selection-end-line="52" selection-end-column="34" />
               <folding>
-                <element signature="e#115#1346#0" expanded="false" />
                 <element signature="e#4246#4603#0" expanded="false" />
               </folding>
             </state>
@@ -589,23 +585,22 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compareFeatureClass_ccgisc.py">
+    <entry file="file://$PROJECT_DIR$/compareFeatureClass.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-459">
-          <caret line="52" column="34" lean-forward="true" selection-start-line="52" selection-start-column="34" selection-end-line="52" selection-end-column="34" />
+        <state relative-caret-position="714">
+          <caret line="42" column="45" lean-forward="true" selection-start-line="42" selection-start-column="45" selection-end-line="42" selection-end-column="45" />
           <folding>
-            <element signature="e#115#1346#0" expanded="false" />
-            <element signature="e#4246#4603#0" expanded="false" />
+            <element signature="e#0#36#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/compareFeatureClass.py">
+    <entry file="file://$PROJECT_DIR$/compareFeatureClass_ccgisc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="497">
-          <caret line="45" column="45" lean-forward="false" selection-start-line="45" selection-start-column="45" selection-end-line="45" selection-end-column="45" />
+        <state relative-caret-position="816">
+          <caret line="52" column="34" lean-forward="true" selection-start-line="52" selection-start-column="34" selection-end-line="52" selection-end-column="34" />
           <folding>
-            <element signature="e#0#36#0" expanded="true" />
+            <element signature="e#4246#4603#0" expanded="false" />
           </folding>
         </state>
       </provider>
