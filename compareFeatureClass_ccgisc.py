@@ -24,14 +24,12 @@ class databaseFixture(object):
         print("in_feature", cls.CCGIS_FC)
         print("out_feature_class", os.path.join(cls.temp_dir, cls.CCGIS_TEMP_DB, "CCGIS_StreetCL"))
         arcpy.CopyFeatures_management(cls.CCGIS_FC, os.path.join(cls.temp_dir, cls.CCGIS_TEMP_DB, "CCGIS_StreetCL"))
-        print("Setup Success")
-
 
     @classmethod
     def setupTempPCDDatabase(cls):
         arcpy.CreateFileGDB_management(cls.temp_dir, cls.PCD_TEMP_DB)
         arcpy.CopyFeatures_management(cls.PCD_FC, os.path.join(cls.temp_dir, cls.PCD_TEMP_DB, "PCD_StreetCL"))
-
+        print("Setup Success")
 
     @classmethod
     def deleteTempDatabase(cls):
@@ -61,18 +59,17 @@ class compareFeatureClass(object):
         for field in temp_list:
             arcpy.AddField_management(cls.FEATURE_CLASS_TEMP, field, "TEXT")
 
+
     @classmethod
-    # Read the feature class from both database and compare the shape, update if matches are found
     def compareFeatureClassShape(cls):
-        fields = ["SHAPE", "Match"]
+        # Read the feature class from both database and compare the shape, update if matches are found
+        fields = ["SHAPE@", "Match"]
         match = 0
         with arcpy.da.UpdateCursor(cls.FEATURE_CLASS_PCD, fields) as cursor1:
             for row1 in cursor1:
-                hash1 = hash(row1[0])
                 with arcpy.da.UpdateCursor(cls.FEATURE_CLASS_TEMP, fields) as cursor2:
                     for row2 in cursor2:
-                        hash2 = hash(row2[0])
-                        if hash1 == hash2:
+                        if row1[0].equals(row2[0]):
                             match = match + 1
                             row1[1] = "Yes"
                             row2[1] = "Yes"
@@ -80,6 +77,7 @@ class compareFeatureClass(object):
                             cursor2.updateRow(row2)
 
         print("There are {} matches".format(match))
+
 
     @classmethod
     # Mark PCD fc class for deletion
@@ -90,6 +88,7 @@ class compareFeatureClass(object):
                 if row[0] != "Yes":
                     row[1] = "Yes"
                     cursor.updateRow(row)
+
 
     @classmethod
     # Mark new features with current date
@@ -109,7 +108,6 @@ class compareFeatureClass(object):
         arcpy.Append_management('temp_layer', cls.FEATURE_CLASS_PCD, "NO_TEST")
         arcpy.SelectLayerByAttribute_management('temp_layer', "CLEAR_SELECTION")
         arcpy.Delete_management('temp_layer')
-
 
 
 def main():

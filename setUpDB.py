@@ -2,10 +2,7 @@ import arcpy
 import os
 import shutil
 import tempfile
-from cuuats.datamodel.fields import BaseField, OIDField, GeometryField, \
-    StringField, NumericField, ScaleField, MethodField, WeightsField
-from cuuats.datamodel.features import BaseFeature
-from cuuats.datamodel.workspaces import WorkspaceManager
+
 
 def setUpModule():
     WorkspaceFixture.setUpModule()
@@ -32,8 +29,9 @@ class WorkspaceFixture(object):
     )
     CCGISC_FEATURE_CLASS_DATA = (
         ('Road A', '2', 35, 2, ([0, 0], [0, 6])),
-        ('B Avenue', '3', 40, 4, ([0, 0], [5, 0])),
-        ('C Street', '4', 25, 1, ([0, 0], [0, -5]))
+        ('B Avenue', '3', 40, 4, ([0, 0], [5, 1])),
+        ('C Street', '4', 25, 1, ([0, 0], [0, -5])),
+        ('D Road', '5', 25, 2, ([1, 4], [2, 5]))
     )
 
     @classmethod
@@ -58,6 +56,15 @@ class WorkspaceFixture(object):
         arcpy.CreateFeatureclass_management(
             cls.CCGISC_path, cls.FEATURE_CLASS_NAME, cls.FEATURE_CLASS_TYPE
         )
+
+        # Define coordinate system
+        #descr = arcpy.Describe("G:\Resources\Connections\CCGISV.sde\CCGISV.CCGIS.Transportation\CCGISV.CCGIS.StreetCL")
+        #sr = descr.spatialReference
+        #descr1 = arcpy.Describe("G:\CUUATS\Sustainable Neighborhoods Toolkit\Data\SustainableNeighborhoodsToolkit.gdb\GISC_join")
+        #sr1 = descr1.spatialReference
+        #arcpy.DefineProjection_management(pcd_fc_path, sr1)
+        #arcpy.DefineProjection_management(ccgisc_fc_path, sr)
+
 
         # Add fields to the feature class
         for (field_name, field_type, field_precision) in cls.FEATURE_CLASS_FIELDS:

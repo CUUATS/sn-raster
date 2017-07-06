@@ -2,7 +2,7 @@ from setUpDB import WorkspaceFixture
 import arcpy
 import os
 from datetime import date
-
+from hashlib import md5
 WorkspaceFixture.setUpModule()
 WorkspaceFixture.setUpTempDatabase()
 
@@ -20,28 +20,26 @@ class compare_FeatureClass(object):
 
 
     @classmethod
-    def addNotificationField(self):
+    def addNotificationField(cls):
     # Add the require field to the target and original database
         pcd_list = ["Match", "Del", "Added"]
         for field in pcd_list:
-            arcpy.AddField_management(self.FEATURE_CLASS_PCD, field, "TEXT")
+            arcpy.AddField_management(cls.FEATURE_CLASS_PCD, field, "TEXT")
         temp_list = ["Match", "Added"]
         for field in temp_list:
-            arcpy.AddField_management(self.FEATURE_CLASS_TEMP, field, "TEXT")
+            arcpy.AddField_management(cls.FEATURE_CLASS_TEMP, field, "TEXT")
 
 
     @classmethod
     # Read the feature class from both database and compare the shape, update if matches are found
     def compareFeatureClassShape(cls):
-        fields = ["SHAPE", "Match"]
+        fields = ["SHAPE@", "Match"]
         match = 0
         with arcpy.da.UpdateCursor(cls.FEATURE_CLASS_PCD, fields) as cursor1:
             for row1 in cursor1:
-                hash1 = hash(row1[0])
                 with arcpy.da.UpdateCursor(cls.FEATURE_CLASS_TEMP, fields) as cursor2:
                     for row2 in cursor2:
-                        hash2 = hash(row2[0])
-                        if hash1 == hash2:
+                        if row1[0].equals(row2[0]):
                             match = match + 1
                             row1[1] = "Yes"
                             row2[1] = "Yes"
@@ -88,7 +86,7 @@ def main():
     compare_FeatureClass.deletePCDFeatureClass()
     compare_FeatureClass.addTempFeatureClass()
     compare_FeatureClass.appendFeature()
-    #WorkspaceFixture.tearDownModule()
+    WorkspaceFixture.tearDownModule()
 
 
 if __name__ == "__main__":

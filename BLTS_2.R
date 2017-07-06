@@ -11,6 +11,7 @@ workDir = "G:/CUUATS/Sustainable Neighborhoods Toolkit/Scripts"
 setwd(workDir)
 source('BLTS_param.R')
 source('BLTS_functions.R')
+source('BLTS_score.R')
 
 
 # Setting up boundary
@@ -28,20 +29,8 @@ offRoadPath = Subsetting_featureClass(bikePath, offRoadPath_list)
 onRoadPath = Subsetting_featureClass(bikePath, onRoadPath_list)
 
 # Rasterizing feature class
-bikeLaneWAdjPL.stk = bl_adj_pk_function(streetCL, onRoadPath,lpd, speed, hasParking, combPkWidth)
-street_list = c(lpd, speed)
-bikePath_list = c(hasParking, combPkWidth)
-comb_list = c(street_list, bikePath_list)
-names(bikeLaneWAdjPL.stk) = comb_list
-bikeLaneWAdjPL.score = raster(ext = studyExtent, crs = crs, res = res)
-
-bikeLaneWAdjPL.score[bikeLaneWAdjPL.stk[[hasParking]] == 1 &
-  bikeLaneWAdjPL.stk[[lpd]] == 1 &
-  bikeLaneWAdjPL.stk[[speed]] <= 25 & 
-  bikeLaneWAdjPL.stk[[combPkWidth >= 15]]] <- 1
-
-
-plot(bikeLaneWAdjPL.score)
+bikeLane.score = bikeLane_function(streetCL, onRoadPath, lpd, speed, hasParking, combPkWidth)
+plot(bikeLane.score)
 
 
 

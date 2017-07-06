@@ -17,6 +17,7 @@ lpd = "lpd"
 speed = "SPEED"
 hasParking = "hasParking"
 combPkWidth = "Comb_ParkBike_width"
+parkingLaneWidth = "pkLaneWidth"
 markedCL = "markedCL"
 
 PathType = "PathType"
