@@ -28,8 +28,12 @@ bikePath = Crop_featureClass(boundary, bikePath)
 offRoadPath = Subsetting_featureClass(bikePath, offRoadPath_list)
 onRoadPath = Subsetting_featureClass(bikePath, onRoadPath_list)
 
-# Rasterizing feature class
+# Segment Scoring
 segment.score = Segment_function(streetCL, onRoadPath, lpd, speed, hasParking, combPkWidth)
+
+# Right Turn Lane Scoring
+
+
 plot(segment.score, main="segment score")
 
 

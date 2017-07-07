@@ -61,12 +61,7 @@ Segment_function = function(streetCL, bikePath, lpd, speed, hasParking, combPkWi
     segment.stk = stack(segment.stk, R_rasterizeFunction(bikePath, crs, studyExtent, res, attr1))
   }
   
-  
-  
   ## Assign name to the raster layers
-  comb_list = c(street_list, bikePath_list)
-  ###names(segment.stk) = comb_list
-  
   comb_list = c(street_list, bikePath_list)
   names(segment.stk) = comb_list
 
@@ -79,8 +74,8 @@ Segment_function = function(streetCL, bikePath, lpd, speed, hasParking, combPkWi
   
   mixTraffic.raster = MixCriteria_function(segment.stk)
   
-  segment.stk = stack(bikeScore.raster, mixTraffic.raster)
-  segment.score = overlay(segment.stk, fun = 'min')
+  segmentscore.stk = stack(bikeScore.raster, mixTraffic.raster)
+  segment.score = overlay(segmentscore.stk, fun = 'min')
   
   segment.score = Sharrow_function(segment.score, segment.stk)
   return(segment.score)

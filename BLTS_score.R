@@ -140,7 +140,15 @@ MixCriteria_function <- function(stk) {
 
 # Sharrow Criteria
 Sharrow_function <- function(score, stk) {
+  PathType.raster = stk[[PathType]]
+  sharrow = PathType.raster == 8
+  sharrow[sharrow != 1] <- 0
+  sharrow[is.na(sharrow)] <- 0
+  sharrow[sharrow == 1] <- -1
   
+  score <- score + sharrow
+  score[score == 0] <- 1
+  return(score)
 }
 
 
